@@ -34,3 +34,6 @@
 # VS
 .vs/
 Binaries/
+WazappyAppUWP/Generated Files/
+WazappyAppUWP/x64/
+x64/

@@ -10,6 +10,7 @@
 //*********************************************************
 
 #include "pch.h"
+#include "MainPage.xaml.h"
 #include "SampleConfiguration.h"
 
 using namespace SDKSample;

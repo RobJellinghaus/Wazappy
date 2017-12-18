@@ -18,6 +18,12 @@
 using namespace Windows::System::Threading;
 using namespace SDKSample::WASAPIAudio;
 
+BOOL WASAPIRendererFacade::CreateRenderer()
+{
+	return false;
+}
+
+
 //
 //  WASAPIRenderer()
 //

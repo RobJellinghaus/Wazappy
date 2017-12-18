@@ -38,6 +38,11 @@ namespace SDKSample
          ContentTypeFile
       };
 
+	  class __declspec(dllexport) WASAPIRendererFacade
+	  {
+	  public:
+		  virtual BOOL CreateRenderer();
+	  };
 
         // User Configurable Arguments for Scenario
         struct DEVICEPROPS

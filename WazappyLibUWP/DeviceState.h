@@ -40,7 +40,7 @@ namespace SDKSample
         };
 
         // Class for DeviceStateChanged events
-        public ref class DeviceStateChangedEventArgs sealed
+		public ref class DeviceStateChangedEventArgs sealed
         {
         internal:
             DeviceStateChangedEventArgs( DeviceState newState, HRESULT hr) :
@@ -59,15 +59,15 @@ namespace SDKSample
             }
 
         private:
-            DeviceState      m_DeviceState;
+			DeviceState      m_DeviceState;
             HRESULT          m_hr;
         };
 
         // DeviceStateChanged delegate
-        public delegate void DeviceStateChangedHandler( Platform::Object^ sender, DeviceStateChangedEventArgs^ e );
+		public delegate void DeviceStateChangedHandler( Platform::Object^ sender, DeviceStateChangedEventArgs^ e );
 
         // DeviceStateChanged Event
-        public ref class DeviceStateChangedEvent sealed
+		public ref class DeviceStateChangedEvent sealed
         {
         public:
             DeviceStateChangedEvent() :
