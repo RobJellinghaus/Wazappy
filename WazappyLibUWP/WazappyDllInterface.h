@@ -30,6 +30,7 @@ namespace Wazappy
 		ContentTypeFile
 	};
 
+	[uuid("D853BA44-E271-4B4C-AAEB-E888340DA015")]
 	class __declspec(dllexport) IWASAPIRenderer : public IUnknown
 	{
 	public:
@@ -42,11 +43,13 @@ namespace Wazappy
 		virtual HRESULT PausePlaybackAsync() = 0;
 	};
 
+	[uuid("841E3543-E7CB-489B-A822-0866CCFD316C")]
 	class __declspec(dllexport) IWASAPICapture : public IUnknown
 	{
 	public:
 	};
 
+	[uuid("D012120D-5A42-4C36-8A51-5AD5C9AB614F")]
 	class __declspec(dllexport) IWASAPIClient : public IUnknown
 	{
 	public:
