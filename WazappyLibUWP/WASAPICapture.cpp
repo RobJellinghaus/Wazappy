@@ -1,23 +1,12 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// WASAPICapture.h
-//
+// Licensed under the MIT License.
+// Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #include "pch.h"
 #include "WASAPICapture.h"
 
 using namespace Windows::Storage;
 using namespace Windows::System::Threading;
-using namespace SDKSample::WASAPIAudio;
+using namespace Wazappy;
 
 #define BITS_PER_BYTE 8
 

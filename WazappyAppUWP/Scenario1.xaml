@@ -30,7 +30,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock x:Name="InputTextBlock1" Width="300" TextWrapping="Wrap" Grid.Row="0" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" >
+            <TextBlock x:Name="InputTextBlock1" Width="300" TextWrapping="Wrap" Grid.Row="0" HorizontalAlignment="Left" >
                 This scenario demonstrates how to enumerate the audio devices attached to the system as well as retrieve additional properties.
             </TextBlock>
             <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Grid.Row="1">

@@ -204,11 +204,13 @@
     <ClInclude Include="WASAPIRenderer.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WazappyDllInterface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFSampleGenerator.cpp" />
     <ClCompile Include="ToneSampleGenerator.cpp" />
     <ClCompile Include="WASAPICapture.cpp" />
+    <ClCompile Include="WASAPIClient.cpp" />
     <ClCompile Include="WASAPIRenderer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">

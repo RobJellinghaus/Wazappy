@@ -1,16 +1,5 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// ToneSampleGenerator.h
-//
+// Licensed under the MIT License.
+// Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #pragma once
 
@@ -20,30 +9,27 @@
 
 template<typename T> T Convert(double Value);
 
-namespace SDKSample
+namespace Wazappy
 {
- namespace WASAPIAudio
- {
-  class ToneSampleGenerator
-  {
-   public:
-   ToneSampleGenerator();
-   ~ToneSampleGenerator();
-    
-   BOOL IsEOF(){ return (m_SampleQueue == nullptr);  };
-   UINT32 GetBufferLength(){ return (m_SampleQueue !=  nullptr ? m_SampleQueue->BufferSize : 0 ); };
-   void Flush();
+	class ToneSampleGenerator
+	{
+	public:
+		ToneSampleGenerator();
+		~ToneSampleGenerator();
 
-   HRESULT GenerateSampleBuffer(DWORD Frequency, UINT32 FramesPerPeriod, WAVEFORMATEX *wfx);
-   HRESULT FillSampleBuffer(UINT32 BytesToRead, BYTE *Data);
+		BOOL IsEOF() { return (m_SampleQueue == nullptr); };
+		UINT32 GetBufferLength() { return (m_SampleQueue != nullptr ? m_SampleQueue->BufferSize : 0); };
+		void Flush();
 
-   private:
-   template <typename T>
-   void GenerateSineSamples(BYTE *Buffer, size_t BufferLength, DWORD Frequency, WORD ChannelCount, DWORD SamplesPerSecond, double Amplitude, double *InitialTheta);
+		HRESULT GenerateSampleBuffer(DWORD Frequency, UINT32 FramesPerPeriod, WAVEFORMATEX *wfx);
+		HRESULT FillSampleBuffer(UINT32 BytesToRead, BYTE *Data);
 
-   private:
-   RenderBuffer *m_SampleQueue;
-   RenderBuffer **m_SampleQueueTail;
-  };
- }
+	private:
+		template <typename T>
+		void GenerateSineSamples(BYTE *Buffer, size_t BufferLength, DWORD Frequency, WORD ChannelCount, DWORD SamplesPerSecond, double Amplitude, double *InitialTheta);
+
+	private:
+		RenderBuffer * m_SampleQueue;
+		RenderBuffer **m_SampleQueueTail;
+	};
 }

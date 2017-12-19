@@ -1,24 +1,12 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// Scenario2.xaml.h
-// Declaration of the Scenario2 class
-//
+﻿// Licensed under the MIT License.
+// Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #pragma once
 
 #include "pch.h"
 #include "Scenario2.g.h"
 #include "MainPage.xaml.h"
-#include "WASAPIRenderer.h"
+#include "WazappyDllInterface.h"
 
 namespace SDKSample
 {
@@ -80,7 +68,8 @@ namespace SDKSample
    IRandomAccessStream^    m_ContentStream;
    ContentType    m_ContentType;
    DeviceStateChangedEvent^   m_StateChangedEvent;
-   ComPtr<WASAPIRenderer>  m_spRenderer;
+   ComPtr<IWASAPIClient> m_spClient;
+   ComPtr<IWASAPIRenderer>  m_spRenderer;
    Platform::Boolean    m_deviceSupportsRawMode;
   };
  }

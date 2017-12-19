@@ -1,25 +1,12 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// Scenario2.xaml.cpp
-// Implementation of the Scenario2 class
-//
+﻿// Licensed under the MIT License.
+// Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #include "pch.h"
 #include "Scenario2.xaml.h"
 #include <ppl.h>
 using namespace concurrency;
 
-using namespace SDKSample;
-using namespace SDKSample::WASAPIAudio;
+using namespace Wazappy;
 
 using namespace Platform;
 using namespace Windows::Foundation;
@@ -468,7 +455,8 @@ void Scenario2::InitializeDevice()
  if (!m_spRenderer)
  {
   // Create a new WASAPI instance
-  m_spRenderer = Make<WASAPIRenderer>();
+	 m_spClient = WASAPIClientFactory::CreateClient();
+  m_spRenderer = m_spClient->CreateRenderer();
 
   if (nullptr == m_spRenderer)
   {

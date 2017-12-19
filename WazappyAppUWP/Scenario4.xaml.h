@@ -1,24 +1,12 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// Scenario4.xaml.h
-// Declaration of the Scenario4 class
-//
+﻿// Licensed under the MIT License.
+// Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #pragma once
 
 #include "pch.h"
 #include "Scenario4.g.h"
 #include "MainPage.xaml.h"
-#include "WASAPICapture.h"
+#include "WazappyDllInterface.h"
 
 #define OSC_START_X  100
 #define OSC_START_Y  100
@@ -71,7 +59,8 @@ namespace SDKSample
             Platform::Boolean           m_IsMFLoaded;
             Platform::Boolean           m_IsLowLatency;
             DeviceStateChangedEvent^    m_StateChangedEvent;
-            ComPtr<WASAPICapture>       m_spCapture;
-        };
+			ComPtr<IWASAPIClient>       m_spClient;
+			ComPtr<IWASAPICapture>      m_spCapture;
+		};
     }
 }

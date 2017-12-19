@@ -13,6 +13,7 @@
     <ClCompile Include="ToneSampleGenerator.cpp" />
     <ClCompile Include="WASAPICapture.cpp" />
     <ClCompile Include="WASAPIRenderer.cpp" />
+    <ClCompile Include="WASAPIClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -24,5 +25,6 @@
     <ClInclude Include="ToneSampleGenerator.h" />
     <ClInclude Include="WASAPICapture.h" />
     <ClInclude Include="WASAPIRenderer.h" />
+    <ClInclude Include="WazappyDllInterface.h" />
   </ItemGroup>
 </Project>

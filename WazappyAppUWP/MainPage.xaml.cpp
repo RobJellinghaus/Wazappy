@@ -12,7 +12,7 @@
 #include "pch.h"
 #include "MainPage.xaml.h"
 
-using namespace SDKSample;
+using namespace Wazappy;
 using namespace Platform;
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;

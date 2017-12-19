@@ -1,28 +1,11 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// wasapirenderer.h
-//
+// Licensed under the MIT License.
+// Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #include "pch.h"
 #include "WASAPIRenderer.h"
 
 using namespace Windows::System::Threading;
-using namespace SDKSample::WASAPIAudio;
-
-BOOL WASAPIRendererFacade::CreateRenderer()
-{
-	return false;
-}
-
+using namespace Wazappy;
 
 //
 //  WASAPIRenderer()
