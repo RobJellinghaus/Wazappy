@@ -195,7 +195,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="PlotData.h" />
+    <ClInclude Include="Contract.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DeviceState.h" />
     <ClInclude Include="MFSampleGenerator.h" />
@@ -210,7 +210,6 @@
     <ClCompile Include="MFSampleGenerator.cpp" />
     <ClCompile Include="ToneSampleGenerator.cpp" />
     <ClCompile Include="WASAPICapture.cpp" />
-    <ClCompile Include="WASAPIClient.cpp" />
     <ClCompile Include="WASAPIRenderer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">

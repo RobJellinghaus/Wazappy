@@ -1,13 +1,7 @@
 // Licensed under the MIT License.
 // Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
-#include <Windows.h>
-#include <wrl\implements.h>
-#include <mfapi.h>
-#include <AudioClient.h>
-#include <mmdeviceapi.h>
-#include "DeviceState.h"
-#include "PlotData.h"
+#include "WazappyDllInterface.h"
 
 using namespace Microsoft::WRL;
 using namespace Windows::Media::Devices;
@@ -21,12 +15,6 @@ using namespace Windows::Storage::Streams;
 
 namespace Wazappy
 {
-    // User Configurable Arguments for Scenario
-    struct CAPTUREDEVICEPROPS
-    {
-        Platform::Boolean       IsLowLatency;
-    };
-
     // Primary WASAPI Capture Class
     class WASAPICapture :
         public RuntimeClass< RuntimeClassFlags< ClassicCom >, FtmBase, IActivateAudioInterfaceCompletionHandler > 
@@ -39,8 +27,6 @@ namespace Wazappy
         HRESULT StartCaptureAsync();
         HRESULT StopCaptureAsync();
         HRESULT FinishCaptureAsync();
-
-        DeviceStateChangedEvent^ GetDeviceStateEvent() { return m_DeviceStateChanged; };
 
         METHODASYNCCALLBACK( WASAPICapture, StartCapture, OnStartCapture );
         METHODASYNCCALLBACK( WASAPICapture, StopCapture, OnStopCapture );
@@ -74,6 +60,8 @@ namespace Wazappy
         CRITICAL_SECTION    m_CritSec;
         DWORD               m_dwQueueID;
 
+		DeviceState			m_deviceState;
+
         DWORD               m_cbHeaderSize;
         DWORD               m_cbDataSize;
         DWORD               m_cbFlushCounter;
@@ -90,8 +78,6 @@ namespace Wazappy
         UINT32                  m_MinPeriodInFrames;
         IAudioCaptureClient     *m_AudioCaptureClient;
         IMFAsyncResult          *m_SampleReadyAsyncResult;
-
-        DeviceStateChangedEvent^       m_DeviceStateChanged;
 
         Platform::Array<int, 1>^    m_PlotData;
         UINT32                      m_cPlotDataMax;

@@ -13,12 +13,10 @@
     <ClCompile Include="ToneSampleGenerator.cpp" />
     <ClCompile Include="WASAPICapture.cpp" />
     <ClCompile Include="WASAPIRenderer.cpp" />
-    <ClCompile Include="WASAPIClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="PlotData.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DeviceState.h" />
     <ClInclude Include="MFSampleGenerator.h" />
@@ -26,5 +24,6 @@
     <ClInclude Include="WASAPICapture.h" />
     <ClInclude Include="WASAPIRenderer.h" />
     <ClInclude Include="WazappyDllInterface.h" />
+    <ClInclude Include="Contract.h" />
   </ItemGroup>
 </Project>

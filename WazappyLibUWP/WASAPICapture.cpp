@@ -19,7 +19,7 @@ WASAPICapture::WASAPICapture() :
     m_cbHeaderSize( 0 ),
     m_cbFlushCounter( 0 ),
     m_dwQueueID( 0 ),
-    m_DeviceStateChanged( nullptr ),
+    m_deviceState( DeviceState::Uninitialized ),
     m_AudioClient( nullptr ),
     m_AudioCaptureClient( nullptr ),
     m_SampleReadyAsyncResult( nullptr ),
@@ -39,12 +39,6 @@ WASAPICapture::WASAPICapture() :
     if (!InitializeCriticalSectionEx( &m_CritSec, 0, 0 ))
     {
         ThrowIfFailed( HRESULT_FROM_WIN32( GetLastError() ) );
-    }
-
-    m_DeviceStateChanged = ref new DeviceStateChangedEvent();
-    if (nullptr == m_DeviceStateChanged)
-    {
-        ThrowIfFailed( E_OUTOFMEMORY );
     }
 
     // Register MMCSS work queue
@@ -78,7 +72,6 @@ WASAPICapture::~WASAPICapture()
 
     MFUnlockWorkQueue( m_dwQueueID );
 
-    m_DeviceStateChanged = nullptr;
     m_ContentStream = nullptr;
     m_OutputStream = nullptr;
     m_WAVDataWriter = nullptr;
@@ -107,7 +100,7 @@ HRESULT WASAPICapture::InitializeAudioDeviceAsync()
     hr = ActivateAudioInterfaceAsync( m_DeviceIdString->Data(), __uuidof(IAudioClient3), nullptr, this, &asyncOp );
     if (FAILED( hr ))
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateInError, hr, true );
+        m_deviceState = DeviceState::InError;
     }
 
     return hr;
@@ -270,11 +263,13 @@ HRESULT WASAPICapture::ActivateCompleted( IActivateAudioInterfaceAsyncOperation 
     }
 
     // Create the visualization array
+	/* B4CR:
     hr = InitializeScopeData();
     if (FAILED( hr ))
     {
         goto exit;
     }
+	*/
 
     // Creates the WAV file.  If successful, will set the Initialized event
     hr = CreateWAVFile();
@@ -286,7 +281,7 @@ HRESULT WASAPICapture::ActivateCompleted( IActivateAudioInterfaceAsyncOperation 
 exit:
     if (FAILED( hr ))
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateInError, hr, true );
+        m_deviceState = DeviceState::InError;
         SAFE_RELEASE( m_AudioClient );
         SAFE_RELEASE( m_AudioCaptureClient );
         SAFE_RELEASE( m_SampleReadyAsyncResult );
@@ -374,11 +369,11 @@ HRESULT WASAPICapture::CreateWAVFile()
     {
         try
         {
-            m_DeviceStateChanged->SetState( DeviceState::DeviceStateInitialized, S_OK, true );
+            m_deviceState = DeviceState::Initialized;
         }
         catch (Platform::Exception ^e)
         {
-            m_DeviceStateChanged->SetState( DeviceState::DeviceStateInError, e->HResult, true );
+            m_deviceState = DeviceState::InError;
         }
     });
 
@@ -419,13 +414,14 @@ HRESULT WASAPICapture::FixWAVHeader()
         .then(
             [this]( bool f )
         {
-            m_DeviceStateChanged->SetState( DeviceState::DeviceStateStopped, S_OK, true );
+            m_deviceState = DeviceState::Stopped;
         });
     });
 
     return S_OK;
 }
 
+/* B4CR:
 //
 //  InitializeScopeData()
 //
@@ -457,6 +453,7 @@ HRESULT WASAPICapture::InitializeScopeData()
 
     return hr;
 }
+*/
 
 //
 //  StartCaptureAsync()
@@ -468,9 +465,9 @@ HRESULT WASAPICapture::StartCaptureAsync()
     HRESULT hr = S_OK;
 
     // We should be in the initialzied state if this is the first time through getting ready to capture.
-    if (m_DeviceStateChanged->GetState() == DeviceState::DeviceStateInitialized)
+    if (m_deviceState == DeviceState::Initialized)
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateStarting, S_OK, true );
+        m_deviceState = DeviceState::Starting;
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStartCapture, nullptr );
     }
 
@@ -491,12 +488,12 @@ HRESULT WASAPICapture::OnStartCapture( IMFAsyncResult* pResult )
     hr = m_AudioClient->Start();
     if (SUCCEEDED( hr ))
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateCapturing, S_OK, true );
+        m_deviceState = DeviceState::Capturing;
         MFPutWaitingWorkItem( m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey );
     }
     else
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateInError, hr, true );
+        m_deviceState = DeviceState::InError;
     }
 
     return S_OK;
@@ -509,13 +506,13 @@ HRESULT WASAPICapture::OnStartCapture( IMFAsyncResult* pResult )
 //
 HRESULT WASAPICapture::StopCaptureAsync()
 {
-    if ( (m_DeviceStateChanged->GetState() != DeviceState::DeviceStateCapturing) &&
-         (m_DeviceStateChanged->GetState() != DeviceState::DeviceStateInError) )
+    if ( (m_deviceState != DeviceState::Capturing) &&
+         (m_deviceState != DeviceState::InError) )
     {
         return E_NOT_VALID_STATE;
     }
 
-    m_DeviceStateChanged->SetState( DeviceState::DeviceStateStopping, S_OK, true );
+    m_deviceState = DeviceState::Stopping;
 
     return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStopCapture, nullptr );
 }
@@ -543,7 +540,7 @@ HRESULT WASAPICapture::OnStopCapture( IMFAsyncResult* pResult )
     // let the async operation completion handle the call.
     if (!m_fWriting)
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateFlushing, S_OK, true );
+        m_deviceState = DeviceState::Flushing;
 
         concurrency::task<unsigned int>( m_WAVDataWriter->StoreAsync()).then(
             [this]( unsigned int BytesWritten )
@@ -563,7 +560,7 @@ HRESULT WASAPICapture::OnStopCapture( IMFAsyncResult* pResult )
 HRESULT WASAPICapture::FinishCaptureAsync()
 {
     // We should be flushing when this is called
-    if (m_DeviceStateChanged->GetState() == DeviceState::DeviceStateFlushing)
+    if (m_deviceState == DeviceState::Flushing)
     {
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xFinishCapture, nullptr ); 
     }
@@ -598,14 +595,14 @@ HRESULT WASAPICapture::OnSampleReady( IMFAsyncResult* pResult )
     if (SUCCEEDED( hr ))
     {
         // Re-queue work item for next sample
-        if (m_DeviceStateChanged->GetState() ==  DeviceState::DeviceStateCapturing)
+        if (m_deviceState ==  DeviceState::Capturing)
         {
             hr = MFPutWaitingWorkItem( m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey );
         }
     }
     else
     {
-        m_DeviceStateChanged->SetState( DeviceState::DeviceStateInError, hr, true );
+        m_deviceState = DeviceState::InError;
     }
     
     return hr;
@@ -630,8 +627,8 @@ HRESULT WASAPICapture::OnAudioSampleRequested( Platform::Boolean IsSilence )
 
     // If this flag is set, we have already queued up the async call to finialize the WAV header
     // So we don't want to grab or write any more data that would possibly give us an invalid size
-    if ( (m_DeviceStateChanged->GetState() == DeviceState::DeviceStateStopping) ||
-         (m_DeviceStateChanged->GetState() == DeviceState::DeviceStateFlushing) )
+    if ( (m_deviceState == DeviceState::Stopping) ||
+         (m_deviceState == DeviceState::Flushing) )
     {
         goto exit;
     }
@@ -683,8 +680,8 @@ HRESULT WASAPICapture::OnAudioSampleRequested( Platform::Boolean IsSilence )
         if (dwCaptureFlags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
         {
             // Pass down a discontinuity flag in case the app is interested and reset back to capturing
-            m_DeviceStateChanged->SetState( DeviceState::DeviceStateDiscontinuity, S_OK, true );
-            m_DeviceStateChanged->SetState( DeviceState::DeviceStateCapturing, S_OK, false );
+            m_deviceState = DeviceState::Discontinuity;
+            m_deviceState = DeviceState::Capturing;
         }
 
         // Zero out sample if silence
@@ -728,9 +725,9 @@ HRESULT WASAPICapture::OnAudioSampleRequested( Platform::Boolean IsSilence )
 
                 // We need to check for StopCapture while we are flusing the file.  If it has come through, then we
                 // can go ahead and call FinisheCaptureAsync() to write the WAV header
-                if (m_DeviceStateChanged->GetState() == DeviceState::DeviceStateStopping)
+                if (m_deviceState == DeviceState::Stopping)
                 {
-                    m_DeviceStateChanged->SetState( DeviceState::DeviceStateFlushing, S_OK, true );
+                    m_deviceState = DeviceState::Flushing;
                     FinishCaptureAsync();
                 }
             });
@@ -803,7 +800,7 @@ HRESULT WASAPICapture::OnSendScopeData( IMFAsyncResult* pResult )
     hr = pResult->GetState( reinterpret_cast<IUnknown**>(&pState) );
     if (SUCCEEDED( hr ))
     {
-        PlotDataReadyEvent::SendEvent( reinterpret_cast<Platform::Object^>(this), pState->m_Data , pState->m_Size );
+        //B4CR: PlotDataReadyEvent::SendEvent( reinterpret_cast<Platform::Object^>(this), pState->m_Data , pState->m_Size );
     }
 
     SAFE_RELEASE( pState );

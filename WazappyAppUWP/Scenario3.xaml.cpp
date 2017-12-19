@@ -6,7 +6,6 @@
 #include <ppl.h>
 using namespace concurrency;
 
-using namespace SDKSample;
 using namespace Wazappy;
 
 using namespace Platform;
@@ -129,7 +128,7 @@ void Scenario3::OnNavigatedFrom(NavigationEventArgs^ e)
     {
         DeviceState deviceState = m_StateChangedEvent->GetState();
 
-        if (deviceState == DeviceState::DeviceStatePlaying)
+        if (deviceState == DeviceState::Playing)
         {
             StopDevice();
         }
@@ -189,7 +188,7 @@ void Scenario3::UpdateMediaControlUI(DeviceState deviceState)
 {
     switch (deviceState)
     {
-    case DeviceState::DeviceStatePlaying:
+    case DeviceState::Playing:
         btnPlay->IsEnabled = false;
         btnStop->IsEnabled = true;
         btnPlayPause->IsEnabled = true;
@@ -197,8 +196,8 @@ void Scenario3::UpdateMediaControlUI(DeviceState deviceState)
         toggleMinimumLatency->IsEnabled = false;
         break;
 
-    case DeviceState::DeviceStateStopped:
-    case DeviceState::DeviceStateInError:
+    case DeviceState::Stopped:
+    case DeviceState::InError:
         btnPlay->IsEnabled = true;
         btnStop->IsEnabled = false;
         btnPlayPause->IsEnabled = true;
@@ -208,15 +207,15 @@ void Scenario3::UpdateMediaControlUI(DeviceState deviceState)
         UpdateContentUI(false);
         break;
 
-    case DeviceState::DeviceStatePaused:
+    case DeviceState::Paused:
         btnPlay->IsEnabled = true;
         btnStop->IsEnabled = true;
         btnPlayPause->IsEnabled = true;
         btnPause->IsEnabled = false;
         break;
 
-    case DeviceState::DeviceStateStarting:
-    case DeviceState::DeviceStateStopping:
+    case DeviceState::Starting:
+    case DeviceState::Stopping:
         btnPlay->IsEnabled = false;
         btnStop->IsEnabled = false;
         btnPlayPause->IsEnabled = false;
@@ -332,12 +331,12 @@ void Scenario3::OnDeviceStateChange(Object^ sender, DeviceStateChangedEventArgs^
     // Handle state specific messages
     switch (e->State)
     {
-    case DeviceState::DeviceStateInitialized:
+    case DeviceState::Initialized:
         StartDevice();
         m_SystemMediaControls->PlaybackStatus = MediaPlaybackStatus::Closed;
         break;
 
-    case DeviceState::DeviceStatePlaying:
+    case DeviceState::Playing:
         if (m_IsMinimumLatency == true)
         {
             ShowStatusMessage("Playback Started (minimum latency)", NotifyType::StatusMessage);
@@ -349,12 +348,12 @@ void Scenario3::OnDeviceStateChange(Object^ sender, DeviceStateChangedEventArgs^
         m_SystemMediaControls->PlaybackStatus = MediaPlaybackStatus::Playing;
         break;
 
-    case DeviceState::DeviceStatePaused:
+    case DeviceState::Paused:
         ShowStatusMessage("Playback Paused", NotifyType::StatusMessage);
         m_SystemMediaControls->PlaybackStatus = MediaPlaybackStatus::Paused;
         break;
 
-    case DeviceState::DeviceStateStopped:
+    case DeviceState::Stopped:
         m_spRenderer = nullptr;
 
         if (m_deviceStateChangeToken.Value != 0)
@@ -368,7 +367,7 @@ void Scenario3::OnDeviceStateChange(Object^ sender, DeviceStateChangedEventArgs^
         m_SystemMediaControls->PlaybackStatus = MediaPlaybackStatus::Stopped;
         break;
 
-    case DeviceState::DeviceStateInError:
+    case DeviceState::InError:
         HRESULT hr = e->hr;
 
         if (m_deviceStateChangeToken.Value != 0)
@@ -471,7 +470,7 @@ void Scenario3::InitializeDevice()
 
         if (nullptr == m_spRenderer)
         {
-            OnDeviceStateChange(this, ref new DeviceStateChangedEventArgs(DeviceState::DeviceStateInError, E_OUTOFMEMORY));
+            OnDeviceStateChange(this, ref new DeviceStateChangedEventArgs(DeviceState::InError, E_OUTOFMEMORY));
             return;
         }
 
@@ -480,7 +479,7 @@ void Scenario3::InitializeDevice()
 
         if (nullptr == m_StateChangedEvent)
         {
-            OnDeviceStateChange(this, ref new DeviceStateChangedEventArgs(DeviceState::DeviceStateInError, E_FAIL));
+            OnDeviceStateChange(this, ref new DeviceStateChangedEventArgs(DeviceState::InError, E_FAIL));
             return;
         }
 
@@ -556,7 +555,7 @@ void Scenario3::PauseDevice()
     {
         DeviceState deviceState = m_StateChangedEvent->GetState();
 
-        if (deviceState == DeviceState::DeviceStatePlaying)
+        if (deviceState == DeviceState::Playing)
         {
             // Starts a work item to pause playback
             m_spRenderer->PausePlaybackAsync();
@@ -573,12 +572,12 @@ void Scenario3::PlayPauseToggleDevice()
     {
         DeviceState deviceState = m_StateChangedEvent->GetState();
 
-        if (deviceState == DeviceState::DeviceStatePlaying)
+        if (deviceState == DeviceState::Playing)
         {
             // Starts a work item to pause playback
             m_spRenderer->PausePlaybackAsync();
         }
-        else if (deviceState == DeviceState::DeviceStatePaused)
+        else if (deviceState == DeviceState::Paused)
         {
             // Starts a work item to pause playback
             m_spRenderer->StartPlaybackAsync();

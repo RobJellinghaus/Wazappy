@@ -9,14 +9,13 @@ using namespace Microsoft::WRL;
 using namespace Windows::Media::Devices;
 using namespace Windows::Storage::Streams;
 
-
 #pragma once
 
 namespace Wazappy
 {
     // Primary WASAPI Renderering Class
     class WASAPIRenderer :
-        public RuntimeClass< RuntimeClassFlags< ClassicCom >, FtmBase, IActivateAudioInterfaceCompletionHandler, IWASAPIRenderer >
+        public RuntimeClass< RuntimeClassFlags< ClassicCom >, FtmBase, IActivateAudioInterfaceCompletionHandler >
     {
     public:
         WASAPIRenderer();
@@ -28,7 +27,6 @@ namespace Wazappy
         HRESULT PausePlaybackAsync();
 
         HRESULT SetVolumeOnSession( UINT32 volume );
-        DeviceStateChangedEvent^ GetDeviceStateEvent() { return m_DeviceStateChanged; };
 
         METHODASYNCCALLBACK( WASAPIRenderer, StartPlayback, OnStartPlayback );
         METHODASYNCCALLBACK( WASAPIRenderer, StopPlayback, OnStopPlayback );
@@ -62,6 +60,8 @@ namespace Wazappy
         MFWORKITEM_KEY      m_SampleReadyKey;
         CRITICAL_SECTION    m_CritSec;
 
+		DeviceState			m_deviceState;
+
         WAVEFORMATEX           *m_MixFormat;
         UINT32                  m_DefaultPeriodInFrames;
         UINT32                  m_FundamentalPeriodInFrames;
@@ -72,7 +72,6 @@ namespace Wazappy
         IAudioRenderClient     *m_AudioRenderClient;
         IMFAsyncResult         *m_SampleReadyAsyncResult;
 
-        DeviceStateChangedEvent^       m_DeviceStateChanged;
         DEVICEPROPS                    m_DeviceProps;
 
         ToneSampleGenerator    *m_ToneSource;

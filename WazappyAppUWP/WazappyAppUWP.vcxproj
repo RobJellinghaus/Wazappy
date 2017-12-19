@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="PlotData.h" />
     <ClInclude Include="SampleConfiguration.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="App.xaml.h">
@@ -199,6 +200,7 @@
     <Page Include="Scenario2.xaml" />
     <Page Include="Scenario3.xaml" />
     <Page Include="Scenario4.xaml" />
+    <Page Include="Styles.xaml" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

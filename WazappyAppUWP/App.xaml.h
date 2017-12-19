@@ -5,7 +5,7 @@
 
 #include "App.g.h"
 
-namespace SDKSample
+namespace Wazappy
 {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.

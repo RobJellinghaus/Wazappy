@@ -5,12 +5,12 @@
 #include "MainPage.xaml.h"
 #include "SampleConfiguration.h"
 
-using namespace SDKSample;
+using namespace Wazappy;
 
 Platform::Array<Scenario>^ MainPage::scenariosInner = ref new Platform::Array<Scenario>
 {
-    { "Device Enumeration", "SDKSample.WASAPIAudio.Scenario1" },
-    { "Audio Rendering with Hardware Offload", "SDKSample.WASAPIAudio.Scenario2" },
-    { "Audio Rendering with Low Latency", "SDKSample.WASAPIAudio.Scenario3" },
-    { "PCM Audio Capture", "SDKSample.WASAPIAudio.Scenario4" }
+    { "Device Enumeration", "Wazappy.Scenario1" },
+    { "Audio Rendering with Hardware Offload", "Wazappy.Scenario2" },
+    { "Audio Rendering with Low Latency", "Wazappy.Scenario3" },
+    { "PCM Audio Capture", "Wazappy.Scenario4" }
 };

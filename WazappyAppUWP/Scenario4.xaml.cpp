@@ -83,7 +83,7 @@ void Scenario4::OnNavigatedFrom(NavigationEventArgs^ e)
     {
         DeviceState deviceState = m_StateChangedEvent->GetState();
 
-        if (deviceState == DeviceState::DeviceStateCapturing)
+        if (deviceState == DeviceState::Capturing)
         {
             StopCapture( this, e );
         }
@@ -105,23 +105,23 @@ void Scenario4::UpdateMediaControlUI( DeviceState deviceState )
 {
     switch( deviceState )
     {
-    case DeviceState::DeviceStateCapturing:
+    case DeviceState::Capturing:
         btnStartCapture->IsEnabled = false;
         btnStopCapture->IsEnabled = true;
         toggleMinimumLatency->IsEnabled = false;
         break;
 
-    case DeviceState::DeviceStateStopped:
+    case DeviceState::Stopped:
         btnStartCapture->IsEnabled = true;
         btnStopCapture->IsEnabled = false;
         toggleMinimumLatency->IsEnabled = true;
         break;
 
-    case DeviceState::DeviceStateInitialized:
-    case DeviceState::DeviceStateStarting:
-    case DeviceState::DeviceStateStopping:
-    case DeviceState::DeviceStateFlushing:
-    case DeviceState::DeviceStateInError:
+    case DeviceState::Initialized:
+    case DeviceState::Starting:
+    case DeviceState::Stopping:
+    case DeviceState::Flushing:
+    case DeviceState::InError:
         btnStartCapture->IsEnabled = false;
         btnStopCapture->IsEnabled = false;
         break;
@@ -162,11 +162,11 @@ void Scenario4::OnDeviceStateChange( Object^ sender, DeviceStateChangedEventArgs
     // Handle state specific messages
     switch( e->State )
     {
-    case DeviceState::DeviceStateInitialized:
+    case DeviceState::Initialized:
         m_spCapture->StartCaptureAsync();
         break;
 
-    case DeviceState::DeviceStateCapturing:
+    case DeviceState::Capturing:
         if (m_IsLowLatency == true)
         {
             strMessage = "Capture Started (minimum latency) @" + t->Format(calendar->GetDateTime());
@@ -179,7 +179,7 @@ void Scenario4::OnDeviceStateChange( Object^ sender, DeviceStateChangedEventArgs
         ShowStatusMessage( strMessage, NotifyType::StatusMessage );
         break;
 
-    case DeviceState::DeviceStateDiscontinuity:
+    case DeviceState::Discontinuity:
         {
             m_DiscontinuityCount++;
             
@@ -192,7 +192,7 @@ void Scenario4::OnDeviceStateChange( Object^ sender, DeviceStateChangedEventArgs
         }
         break;
 
-    case DeviceState::DeviceStateFlushing:
+    case DeviceState::Flushing:
         PlotDataReadyEvent::PlotDataReady -= m_plotDataReadyToken;
         m_plotDataReadyToken.Value = 0;
 
@@ -216,7 +216,7 @@ void Scenario4::OnDeviceStateChange( Object^ sender, DeviceStateChangedEventArgs
         }));
         break;
 
-    case DeviceState::DeviceStateStopped:
+    case DeviceState::Stopped:
         // For the stopped state, completely tear down the audio device
         m_spCapture = nullptr;
 
@@ -230,7 +230,7 @@ void Scenario4::OnDeviceStateChange( Object^ sender, DeviceStateChangedEventArgs
         ShowStatusMessage( "Capture Stopped", NotifyType::StatusMessage );
         break;
 
-    case DeviceState::DeviceStateInError:
+    case DeviceState::InError:
         HRESULT hr = e->hr;
         
         if (m_deviceStateChangeToken.Value != 0)
@@ -326,7 +326,7 @@ void Scenario4::InitializeCapture( Platform::Object^ sender, Object^ e )
         
     if (nullptr == m_spCapture)
     {
-        OnDeviceStateChange( this, ref new DeviceStateChangedEventArgs( DeviceState::DeviceStateInError, E_OUTOFMEMORY ));
+        OnDeviceStateChange( this, ref new DeviceStateChangedEventArgs( DeviceState::InError, E_OUTOFMEMORY ));
         return;
     }
 
@@ -335,7 +335,7 @@ void Scenario4::InitializeCapture( Platform::Object^ sender, Object^ e )
 
     if (nullptr == m_StateChangedEvent)
     {
-        OnDeviceStateChange( this, ref new DeviceStateChangedEventArgs( DeviceState::DeviceStateInError, E_FAIL ));
+        OnDeviceStateChange( this, ref new DeviceStateChangedEventArgs( DeviceState::InError, E_FAIL ));
         return;
     }
 
