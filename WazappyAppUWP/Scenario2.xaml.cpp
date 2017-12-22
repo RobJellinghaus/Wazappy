@@ -22,8 +22,8 @@ Scenario2::Scenario2() :
 	m_IsMFLoaded(false),
 	m_ContentStream(nullptr),
 	m_StateChangedEvent(nullptr),
-	m_spRenderer(nullptr),
-	m_ContentType(ContentType::ContentTypeTone)
+	m_renderer(),
+	m_ContentType(ContentType::ContentType_Tone)
 {
 	InitializeComponent();
 
@@ -163,13 +163,13 @@ void Scenario2::UpdateContentUI(Platform::Boolean disableAll)
 
 			switch (m_ContentType)
 			{
-			case ContentType::ContentTypeTone:
+			case ContentType::ContentType_Tone:
 				btnFilePicker->IsEnabled = false;
 				sliderFrequency->IsEnabled = true;
 				UpdateContentProps(sliderFrequency->Value.ToString() + " Hz");
 				break;
 
-			case ContentType::ContentTypeFile:
+			case ContentType::ContentType_File:
 				btnFilePicker->IsEnabled = true;
 				sliderFrequency->IsEnabled = false;
 				break;
@@ -236,7 +236,7 @@ void Scenario2::UpdateContentProps(String^ str)
 			Windows::UI::Xaml::Media::SolidColorBrush ^brush;
 			txtContentProps->Text = text;
 
-			if (("" == text) && (m_ContentType == ContentType::ContentTypeFile))
+			if (("" == text) && (m_ContentType == ContentType::ContentType_File))
 			{
 				brush = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::ColorHelper::FromArgb(0xCC, 0xFF, 0x00, 0x00));
 			}
@@ -273,7 +273,7 @@ void Scenario2::sliderVolume_ValueChanged(Platform::Object^ sender, Windows::UI:
 
 void Scenario2::radioTone_Checked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	m_ContentType = ContentType::ContentTypeTone;
+	m_ContentType = ContentType::ContentType_Tone;
 	UpdateContentProps("");
 	m_ContentStream = nullptr;
 	UpdateContentUI(false);
@@ -281,7 +281,7 @@ void Scenario2::radioTone_Checked(Platform::Object^ sender, Windows::UI::Xaml::R
 
 void Scenario2::radioFile_Checked(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	m_ContentType = ContentType::ContentTypeFile;
+	m_ContentType = ContentType::ContentType_File;
 	UpdateContentProps("");
 	m_ContentStream = nullptr;
 	UpdateContentUI(false);
@@ -343,7 +343,7 @@ void Scenario2::OnDeviceStateChange(Object^ sender, DeviceStateChangedEventArgs^
 		break;
 
 	case DeviceState::Stopped:
-		m_spRenderer = nullptr;
+		m_renderer = WazappyNodeHandle();
 
 		if (m_deviceStateChangeToken.Value != 0)
 		{
@@ -366,7 +366,8 @@ void Scenario2::OnDeviceStateChange(Object^ sender, DeviceStateChangedEventArgs^
 			m_deviceStateChangeToken.Value = 0;
 		}
 
-		m_spRenderer = nullptr;
+		// null out the renderer handle
+		m_renderer = WazappyNodeHandle();
 
 		m_SystemMediaControls->PlaybackStatus = MediaPlaybackStatus::Closed;
 
@@ -436,10 +437,10 @@ void Scenario2::OnPickFileAsync()
 //
 void Scenario2::OnSetVolume(UINT32 volume)
 {
-	if (m_spRenderer)
+	if (WASAPISession::WASAPISession_IsInitialized())
 	{
 		// Updates the Session volume on the AudioClient
-		m_spRenderer->SetVolumeOnSession(volume);
+		WASAPISession::WASAPISession_SetVolumeOnSession(volume);
 	}
 }
 
@@ -452,19 +453,19 @@ void Scenario2::InitializeDevice()
 {
 	HRESULT hr = S_OK;
 
-	if (!m_spRenderer)
+	if (!m_renderer.IsValid())
 	{
 		// Create a new WASAPI instance
-		m_spClient = WASAPIClientFactory::CreateClient();
-		m_spRenderer = m_spClient->CreateRenderer();
+		m_renderer = WASAPISession::WASAPISession_GetDefaultRenderDevice();
 
-		if (nullptr == m_spRenderer)
+		if (!m_renderer.IsValid())
 		{
 			OnDeviceStateChange(this, ref new DeviceStateChangedEventArgs(DeviceState::InError, E_OUTOFMEMORY));
 			return;
 		}
 
 		// Get a pointer to the device event interface
+		// TODO: make this keep the DeviceStateEvent on this side and wire up the callback functor
 		m_StateChangedEvent = m_spRenderer->GetDeviceStateEvent();
 
 		if (nullptr == m_StateChangedEvent)
@@ -483,14 +484,14 @@ void Scenario2::InitializeDevice()
 
 		switch (m_ContentType)
 		{
-		case ContentType::ContentTypeTone:
+		case ContentType::ContentType_Tone:
 			props.IsTonePlayback = true;
 			props.Frequency = static_cast<DWORD>(sliderFrequency->Value);
 			break;
 
-		case ContentType::ContentTypeFile:
+		case ContentType::ContentType_File:
 			props.IsTonePlayback = false;
-			props.ContentStream = m_ContentStream;
+			// props.ContentStream = m_ContentStream;
 			break;
 		}
 
@@ -501,10 +502,10 @@ void Scenario2::InitializeDevice()
 		props.IsRawSupported = m_deviceSupportsRawMode;
 		props.hnsBufferDuration = static_cast<REFERENCE_TIME>(BufferSize);
 
-		m_spRenderer->SetProperties(props);
+		WASAPIRenderDevice::WASAPIRenderDevice_SetProperties(m_renderer, props);
 
 		// Selects the Default Audio Device
-		m_spRenderer->InitializeAudioDeviceAsync();
+		WASAPISession::WASAPISession_InitializeAudioDeviceAsync();
 	}
 }
 
@@ -513,7 +514,7 @@ void Scenario2::InitializeDevice()
 //
 void Scenario2::StartDevice()
 {
-	if (nullptr == m_spRenderer)
+	if (!m_renderer.IsValid())
 	{
 		// Call from main UI thread
 		InitializeDevice();
@@ -521,7 +522,7 @@ void Scenario2::StartDevice()
 	else
 	{
 		// Starts a work item to begin playback, likely in the paused state
-		m_spRenderer->StartPlaybackAsync();
+		WASAPIRenderDevice::WASAPIRenderDevice_StartPlaybackAsync(m_renderer);
 	}
 }
 
@@ -530,10 +531,10 @@ void Scenario2::StartDevice()
 //
 void Scenario2::StopDevice()
 {
-	if (m_spRenderer)
+	if (m_renderer.IsValid())
 	{
 		// Set the event to stop playback
-		m_spRenderer->StopPlaybackAsync();
+		WASAPIRenderDevice::WASAPIRenderDevice_StopPlaybackAsync(m_renderer);
 	}
 }
 
@@ -542,14 +543,14 @@ void Scenario2::StopDevice()
 //
 void Scenario2::PauseDevice()
 {
-	if (m_spRenderer)
+	if (m_renderer.IsValid())
 	{
 		DeviceState deviceState = m_StateChangedEvent->GetState();
 
 		if (deviceState == DeviceState::Playing)
 		{
 			// Starts a work item to pause playback
-			m_spRenderer->PausePlaybackAsync();
+			WASAPIRenderDevice::WASAPIRenderDevice_PausePlaybackAsync(m_renderer);
 		}
 	}
 }
@@ -559,19 +560,19 @@ void Scenario2::PauseDevice()
 //
 void Scenario2::PlayPauseToggleDevice()
 {
-	if (m_spRenderer)
+	if (m_renderer.IsValid())
 	{
 		DeviceState deviceState = m_StateChangedEvent->GetState();
 
 		if (deviceState == DeviceState::Playing)
 		{
 			// Starts a work item to pause playback
-			m_spRenderer->PausePlaybackAsync();
+			WASAPIRenderDevice::WASAPIRenderDevice_PausePlaybackAsync(m_renderer);
 		}
 		else if (deviceState == DeviceState::Paused)
 		{
-			// Starts a work item to pause playback
-			m_spRenderer->StartPlaybackAsync();
+			// Starts a work item to start playback
+			WASAPIRenderDevice::WASAPIRenderDevice_StartPlaybackAsync(m_renderer);
 		}
 	}
 	else

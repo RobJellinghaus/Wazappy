@@ -1,6 +1,9 @@
 // Licensed under the MIT License.
 // Based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
+// This header is the only header file which external clients of this DLL should include.
+// It defines the only dllexported APIs, and all of the exported types, in the library.
+
 #pragma once
 
 #include "Common.h"
@@ -33,51 +36,61 @@ namespace Wazappy
 		{
 			BOOL IsLowLatency;
 		};
-	}
 
-	public enum class ContentType
-	{
-		ContentType_Tone,
-		ContentType_File
-	};
+		enum ContentType
+		{
+			ContentType_Tone,
+			ContentType_File
+		};
 
-	// Types of Wazappy nodes.
-	public enum class WazappyNodeType
-	{
-		// Nonexistent value (to catch uninitialized nodes).
-		NodeType_None,
+		// Types of Wazappy nodes.
+		enum WazappyNodeType
+		{
+			// Nonexistent value (to catch uninitialized nodes).
+			NodeType_None,
 
-		// Input device which captures incoming audio.
-		NodeType_CaptureDevice,
+			// Input device which captures incoming audio.
+			NodeType_CaptureDevice,
 
-		// Output device which renders outgoing audio.
-		NodeType_RenderDevice
-	};
+			// Output device which renders outgoing audio.
+			NodeType_RenderDevice
+		};
 
-	extern "C"
-	{
 		// A handle to a Wazappy node. 
+		// No reference counting or even tracking is done over this interface; it works purely at the raw pointer level.
+		// On the Wazappy side, debug builds never delete nodes, only mark them as tombstoned, with contracts catching
+		// post-mortem access.  This at least catches use-after-free situations in debug builds.
+		// Would be good to have something better than void* here (e.g. something stronger than a totally weak pointer),
+		// but not initially....
 		struct WazappyNodeHandle
 		{
 		public:
-			const WazappyNodeType nodeType;
-			const size_t id;
+			WazappyNodeType nodeType;
+			void* pointer;
 
-			WazappyNodeHandle(WazappyNodeType nodeType, size_t id) : nodeType(nodeType), id(id)
+			WazappyNodeHandle(WazappyNodeType nodeType, void* pointer) : nodeType(nodeType), pointer(pointer)
 			{
 				Contract::Requires(nodeType > WazappyNodeType::NodeType_None);
-				Contract::Requires(id > 0);
+				Contract::Requires(pointer != nullptr);
 			}
 
-			WazappyNodeHandle(const WazappyNodeHandle& other) : nodeType(other.nodeType), id(other.id) {}
+			WazappyNodeHandle(const WazappyNodeHandle& other) : nodeType(other.nodeType), pointer(other.pointer) {}
+
+			WazappyNodeHandle& operator=(const WazappyNodeHandle& other)
+			{
+				nodeType = other.nodeType;
+				pointer = other.pointer;
+			}
 
 			// Default node handle: invalid for all use
-			WazappyNodeHandle() : nodeType{}, id{} {}
+			WazappyNodeHandle() : nodeType{}, pointer{} {}
 
 			bool IsValid() const { return nodeType != WazappyNodeType::NodeType_None; }
 		};
 
 		// Top-level methods which affect the entire session.
+		// The session is semantically a singleton; that is, there is no WazappyNodeHandle for a session,
+		// and these methods require no context.
 		class __declspec(dllexport) WASAPISession
 		{
 		public:
@@ -89,11 +102,25 @@ namespace Wazappy
 			// Becomes true once the session is initialized.
 			static BOOL WASAPISession_IsInitialized();
 
-			// Get a node handle for the default capture device
+			// Get a node handle for the default capture device.
+			// Can be called before IsInitialized().
 			static WazappyNodeHandle WASAPISession_GetDefaultCaptureDevice();
+
 			// Get a node handle for the default render device.
+			// Can be called before IsInitialized().
 			static WazappyNodeHandle WASAPISession_GetDefaultRenderDevice();
+
+			// Close the session.  Will forcibly free all related objects and release all devices
+			// and handles.
+			// Can only be called after IsInitialized().
+			// IsInitialized() becomes false after this method is called.
+			static HRESULT WASAPISession_Close();
 		};
+
+		// Type of function pointer taking a void* and returning an HRESULT.
+		// This is used for all callbacks from Wazappy to Wazappy clients; typically the void*
+		// is 
+		typedef HRESULT(__stdcall *DeviceStateCallback)(void* target, DeviceState deviceState);
 
 		/*
 		class __declspec(dllexport) WASAPINode
@@ -110,10 +137,15 @@ namespace Wazappy
 		*/
 
 		// Methods specific to RenderDevices; all handles must be RenderDevices.
+		// The pointer field of a WASAPIRenderDevice handle is a 
 		class __declspec(dllexport) WASAPIRenderDevice
 		{
 		public:
+			// Get the current device state of this render device.
 			static DeviceState WASAPIRenderDevice_GetDeviceState(WazappyNodeHandle handle);
+
+			// Register a device state callback.
+			static HRESULT WASAPIRenderDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, DeviceStateCallback callback, void* target);
 
 			static HRESULT WASAPIRenderDevice_SetProperties(WazappyNodeHandle handle, DEVICEPROPS props);
 			static HRESULT WASAPIRenderDevice_StartPlaybackAsync(WazappyNodeHandle handle);
@@ -126,6 +158,9 @@ namespace Wazappy
 		{
 		public:
 			static DeviceState WASAPICaptureDevice_GetDeviceState(WazappyNodeHandle handle);
+
+			// Register a device state callback.
+			static HRESULT WASAPIRenderDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, DeviceStateCallback callback, void* target);
 
 			static HRESULT WASAPICaptureDevice_SetProperties(WazappyNodeHandle handle, CAPTUREDEVICEPROPS props);
 			static HRESULT WASAPICaptureDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle);

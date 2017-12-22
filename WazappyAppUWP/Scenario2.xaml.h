@@ -66,8 +66,7 @@ namespace Wazappy
 		IRandomAccessStream^    m_ContentStream;
 		ContentType    m_ContentType;
 		DeviceStateChangedEvent^   m_StateChangedEvent;
-		ComPtr<IWASAPIClient> m_spClient;
-		ComPtr<IWASAPIRenderer>  m_spRenderer;
+		WazappyNodeHandle m_renderer;
 		Platform::Boolean    m_deviceSupportsRawMode;
 	};
 }

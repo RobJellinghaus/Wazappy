@@ -5,6 +5,7 @@
 
 #include "MainPage.g.h"
 #include "SampleConfiguration.h"
+#include "WazappyDllInterface.h"
 
 namespace Wazappy
 {

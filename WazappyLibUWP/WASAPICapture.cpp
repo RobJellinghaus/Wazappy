@@ -480,7 +480,7 @@ HRESULT WASAPICapture::StartCaptureAsync()
 //
 //  Callback method to start capture
 //
-HRESULT WASAPICapture::OnStartCapture( IMFAsyncResult* pResult )
+HRESULT WASAPICapture::OnStartCapture( IMFAsyncResult* ignore )
 {
     HRESULT hr = S_OK;
 
