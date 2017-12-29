@@ -8,7 +8,7 @@
 
 #define MILLISECONDS_TO_VISUALIZE 20
 
-namespace Wazappy
+namespace WazappyApp
 {
 	// Class for PlotDataReady events
 	public ref class PlotDataReadyEventArgs sealed
@@ -31,7 +31,7 @@ namespace Wazappy
 
 	private:
 		Platform::Array<int, 1>^     m_PointArray;
-		UINT32                      m_Size;
+		UINT32 m_Size;
 	};
 
 	// PlotDataReady delegate

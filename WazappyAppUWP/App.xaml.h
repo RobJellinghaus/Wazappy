@@ -5,7 +5,7 @@
 
 #include "App.g.h"
 
-namespace Wazappy
+namespace WazappyApp
 {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
@@ -13,7 +13,7 @@ namespace Wazappy
     ref class App sealed
     {
     protected:
-        virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ e) override;
+        virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ e);
 
     internal:
         App();

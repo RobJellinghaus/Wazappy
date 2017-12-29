@@ -8,7 +8,7 @@
 #include "MainPage.xaml.h"
 #include "WazappyDllInterface.h"
 
-namespace Wazappy
+namespace WazappyApp
 {
 	[Windows::Foundation::Metadata::WebHostHidden]
 	public ref class Scenario2 sealed
@@ -56,17 +56,17 @@ namespace Wazappy
 		void MediaButtonPressed(Windows::Media::SystemMediaTransportControls^ sender, Windows::Media::SystemMediaTransportControlsButtonPressedEventArgs^ e);
 
 	private:
-		MainPage ^ rootPage;
-		Windows::UI::Core::CoreDispatcher^     m_CoreDispatcher;
-		Windows::Media::SystemMediaTransportControls^   m_SystemMediaControls;
-		Windows::Foundation::EventRegistrationToken  m_deviceStateChangeToken;
-		Windows::Foundation::EventRegistrationToken  m_SystemMediaControlsButtonToken;
+		MainPage^ rootPage;
+		Windows::UI::Core::CoreDispatcher^ m_CoreDispatcher;
+		Windows::Media::SystemMediaTransportControls^ m_SystemMediaControls;
+		Windows::Foundation::EventRegistrationToken m_deviceStateChangeToken;
+		Windows::Foundation::EventRegistrationToken m_SystemMediaControlsButtonToken;
 
-		Platform::Boolean    m_IsMFLoaded;
-		IRandomAccessStream^    m_ContentStream;
-		ContentType    m_ContentType;
-		DeviceStateChangedEvent^   m_StateChangedEvent;
+		Platform::Boolean m_IsMFLoaded;
+		IRandomAccessStream^ m_ContentStream;
+		ContentType m_ContentType;
+		DeviceStateChangedEvent^ m_StateChangedEvent;
 		WazappyNodeHandle m_renderer;
-		Platform::Boolean    m_deviceSupportsRawMode;
+		Platform::Boolean m_deviceSupportsRawMode;
 	};
 }

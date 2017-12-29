@@ -56,6 +56,10 @@ namespace Wazappy
 			NodeType_RenderDevice
 		};
 
+		// The ID of a WASAPI node object; avoids issues with marshaling object references.
+		typedef int NodeId;
+
+
 		// A handle to a Wazappy node. 
 		// No reference counting or even tracking is done over this interface; it works purely at the raw pointer level.
 		// On the Wazappy side, debug builds never delete nodes, only mark them as tombstoned, with contracts catching
@@ -66,24 +70,24 @@ namespace Wazappy
 		{
 		public:
 			WazappyNodeType nodeType;
-			void* pointer;
+			NodeId nodeId;
 
-			WazappyNodeHandle(WazappyNodeType nodeType, void* pointer) : nodeType(nodeType), pointer(pointer)
+			WazappyNodeHandle(WazappyNodeType nodeType, NodeId nodeId) : nodeType(nodeType), nodeId(nodeId)
 			{
 				Contract::Requires(nodeType > WazappyNodeType::NodeType_None);
-				Contract::Requires(pointer != nullptr);
+				Contract::Requires(nodeId != (NodeId)0);
 			}
 
-			WazappyNodeHandle(const WazappyNodeHandle& other) : nodeType(other.nodeType), pointer(other.pointer) {}
+			WazappyNodeHandle(const WazappyNodeHandle& other) : nodeType(other.nodeType), nodeId(other.nodeId) {}
 
 			WazappyNodeHandle& operator=(const WazappyNodeHandle& other)
 			{
 				nodeType = other.nodeType;
-				pointer = other.pointer;
+				nodeId = other.nodeId;
 			}
 
 			// Default node handle: invalid for all use
-			WazappyNodeHandle() : nodeType{}, pointer{} {}
+			WazappyNodeHandle() : nodeType{}, nodeId{} {}
 
 			bool IsValid() const { return nodeType != WazappyNodeType::NodeType_None; }
 		};
@@ -117,10 +121,11 @@ namespace Wazappy
 			static HRESULT WASAPISession_Close();
 		};
 
-		// Type of function pointer taking a void* and returning an HRESULT.
-		// This is used for all callbacks from Wazappy to Wazappy clients; typically the void*
-		// is 
-		typedef HRESULT(__stdcall *DeviceStateCallback)(void* target, DeviceState deviceState);
+		// The ID of a callback object; avoids issues with marshaling function pointers.
+		typedef int CallbackId;
+
+		// Callback which updates a deviceState.  The CallbackId is passed in when registering.
+		typedef HRESULT(__stdcall *DeviceStateCallback)(CallbackId target, DeviceState deviceState);
 
 		/*
 		class __declspec(dllexport) WASAPINode
@@ -136,17 +141,26 @@ namespace Wazappy
 		};
 		*/
 
+		// Methods specific to Devices; all handles must be Devices.
+		class __declspec(dllexport) WASAPIDevice
+		{
+		public:
+			// Get the current device state of this device.
+			static DeviceState WASAPIRenderDevice_GetDeviceState(WazappyNodeHandle handle);
+
+			// Register the device state callback hook, used for dispatching all callbacks.
+			static HRESULT WASAPIRenderDevice_RegisterDeviceStateChangeCallbackHook(WazappyNodeHandle handle, DeviceStateCallback hook);
+
+			// Register a particular callback on this node, by its ID.
+			static HRESULT WASAPIDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, CallbackId id);
+			// Unregister a particular callback on this node, by its ID.
+			static HRESULT WASAPIDevice_UnregisterDeviceStateChangeCallback(WazappyNodeHandle handle, CallbackId id);
+		};
+
 		// Methods specific to RenderDevices; all handles must be RenderDevices.
-		// The pointer field of a WASAPIRenderDevice handle is a 
 		class __declspec(dllexport) WASAPIRenderDevice
 		{
 		public:
-			// Get the current device state of this render device.
-			static DeviceState WASAPIRenderDevice_GetDeviceState(WazappyNodeHandle handle);
-
-			// Register a device state callback.
-			static HRESULT WASAPIRenderDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, DeviceStateCallback callback, void* target);
-
 			static HRESULT WASAPIRenderDevice_SetProperties(WazappyNodeHandle handle, DEVICEPROPS props);
 			static HRESULT WASAPIRenderDevice_StartPlaybackAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPIRenderDevice_StopPlaybackAsync(WazappyNodeHandle handle);
@@ -157,11 +171,6 @@ namespace Wazappy
 		class __declspec(dllexport) WASAPICaptureDevice
 		{
 		public:
-			static DeviceState WASAPICaptureDevice_GetDeviceState(WazappyNodeHandle handle);
-
-			// Register a device state callback.
-			static HRESULT WASAPIRenderDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, DeviceStateCallback callback, void* target);
-
 			static HRESULT WASAPICaptureDevice_SetProperties(WazappyNodeHandle handle, CAPTUREDEVICEPROPS props);
 			static HRESULT WASAPICaptureDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPICaptureDevice_StartCaptureAsync(WazappyNodeHandle handle);

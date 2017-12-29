@@ -113,7 +113,7 @@ public:
 
 public:
     Platform::Array<int,1>^  m_Data;
-    UINT32                   m_Size;
+    UINT32 m_Size;
 
 private:
     virtual ~CAsyncState() {};

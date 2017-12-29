@@ -5,6 +5,7 @@
 #include "Scenario1.xaml.h"
 
 using namespace Wazappy;
+using namespace WazappyApp;
 
 using namespace Platform;
 using namespace Windows::Foundation;
@@ -13,7 +14,6 @@ using namespace Windows::UI::Core;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Navigation;
-
 
 Scenario1::Scenario1()
 {

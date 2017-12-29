@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DeviceStateChangedEvent.h" />
     <ClInclude Include="PlotData.h" />
     <ClInclude Include="SampleConfiguration.h" />
     <ClInclude Include="pch.h" />
@@ -182,6 +183,7 @@
     <ClInclude Include="Scenario2.xaml.h">
       <DependentUpon>Scenario2.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="WazappyClient.h" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -221,6 +223,7 @@
     <ClCompile Include="Scenario2.xaml.cpp">
       <DependentUpon>Scenario2.xaml</DependentUpon>
     </ClCompile>
+    <ClCompile Include="WazappyClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\WazappyLibUWP\WazappyLibUWP.vcxproj">

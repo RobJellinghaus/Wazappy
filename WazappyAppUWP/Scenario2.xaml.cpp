@@ -7,6 +7,7 @@
 using namespace concurrency;
 
 using namespace Wazappy;
+using namespace WazappyApp;
 
 using namespace Platform;
 using namespace Windows::Foundation;

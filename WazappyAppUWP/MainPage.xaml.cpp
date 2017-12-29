@@ -13,6 +13,8 @@
 #include "MainPage.xaml.h"
 
 using namespace Wazappy;
+using namespace WazappyApp;
+
 using namespace Platform;
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;

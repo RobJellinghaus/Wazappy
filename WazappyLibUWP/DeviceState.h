@@ -7,8 +7,6 @@ using namespace Windows::Storage::Streams;
 
 namespace Wazappy
 {
-	// NB: All states >= DeviceStateInitialized will allow some methods
-	// to be called successfully on the Audio Client
 	public enum class DeviceState
 	{
 		Uninitialized,

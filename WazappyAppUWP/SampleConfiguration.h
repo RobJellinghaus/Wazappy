@@ -4,7 +4,7 @@
 #pragma once 
 #include "pch.h"
 
-namespace Wazappy
+namespace WazappyApp
 {
     value struct Scenario;
 

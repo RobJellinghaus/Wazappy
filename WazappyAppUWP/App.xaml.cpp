@@ -5,6 +5,7 @@
 #include "MainPage.xaml.h"
 
 using namespace Wazappy;
+using namespace WazappyApp;
 
 using namespace Platform;
 using namespace Windows::ApplicationModel;

@@ -53,36 +53,36 @@ namespace Wazappy
         HRESULT ProcessScopeData( BYTE* pData, DWORD cbBytes );
         
     private:
-        Platform::String^   m_DeviceIdString;
-        UINT32              m_BufferFrames;
-        HANDLE              m_SampleReadyEvent;
-        MFWORKITEM_KEY      m_SampleReadyKey;
-        CRITICAL_SECTION    m_CritSec;
-        DWORD               m_dwQueueID;
+        Platform::String^ m_DeviceIdString;
+        UINT32 m_BufferFrames;
+        HANDLE m_SampleReadyEvent;
+        MFWORKITEM_KEY m_SampleReadyKey;
+        CRITICAL_SECTION m_CritSec;
+        DWORD m_dwQueueID;
 
-		DeviceState			m_deviceState;
+		DeviceState m_deviceState;
 
-        DWORD               m_cbHeaderSize;
-        DWORD               m_cbDataSize;
-        DWORD               m_cbFlushCounter;
-        BOOL                m_fWriting;
+        DWORD m_cbHeaderSize;
+        DWORD m_cbDataSize;
+        DWORD m_cbFlushCounter;
+        BOOL m_fWriting;
 
-        IRandomAccessStream^     m_ContentStream;
-        IOutputStream^           m_OutputStream;
-        DataWriter^              m_WAVDataWriter;
-        WAVEFORMATEX            *m_MixFormat;
-        IAudioClient3           *m_AudioClient;
-        UINT32                  m_DefaultPeriodInFrames;
-        UINT32                  m_FundamentalPeriodInFrames;
-        UINT32                  m_MaxPeriodInFrames;
-        UINT32                  m_MinPeriodInFrames;
-        IAudioCaptureClient     *m_AudioCaptureClient;
-        IMFAsyncResult          *m_SampleReadyAsyncResult;
+        IRandomAccessStream^ m_ContentStream;
+        IOutputStream^ m_OutputStream;
+        DataWriter^ m_WAVDataWriter;
+        WAVEFORMATEX *m_MixFormat;
+        IAudioClient3 *m_AudioClient;
+        UINT32 m_DefaultPeriodInFrames;
+        UINT32 m_FundamentalPeriodInFrames;
+        UINT32 m_MaxPeriodInFrames;
+        UINT32 m_MinPeriodInFrames;
+        IAudioCaptureClient *m_AudioCaptureClient;
+        IMFAsyncResult *m_SampleReadyAsyncResult;
 
-        Platform::Array<int, 1>^    m_PlotData;
-        UINT32                      m_cPlotDataMax;
-        UINT32                      m_cPlotDataFilled;
+        Platform::Array<int, 1>^ m_PlotData;
+        UINT32 m_cPlotDataMax;
+        UINT32 m_cPlotDataFilled;
 
-        CAPTUREDEVICEPROPS          m_DeviceProps;
+        CAPTUREDEVICEPROPS m_DeviceProps;
     };
 }

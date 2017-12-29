@@ -95,18 +95,18 @@ namespace Wazappy
         Platform::Boolean IsPreRollFilled();
 
     private:
-        volatile ULONG          m_Ref;
-        IRandomAccessStream^    m_ContentStream;
-        WAVEFORMATEX           *m_MixFormat;
-        UINT32                  m_BytesPerPeriod;
-        Platform::Boolean       m_IsInitialized;
+        volatile ULONG m_Ref;
+        IRandomAccessStream^ m_ContentStream;
+        WAVEFORMATEX *m_MixFormat;
+        UINT32 m_BytesPerPeriod;
+        Platform::Boolean m_IsInitialized;
 
-        IMFSourceReader        *m_MFSourceReader;
-        IMFMediaType           *m_AudioMT;
-        ReaderState             m_ReaderState;
+        IMFSourceReader *m_MFSourceReader;
+        IMFMediaType *m_AudioMT;
+        ReaderState m_ReaderState;
 
-        RenderBuffer           *m_SampleQueue;
-        RenderBuffer          **m_SampleQueueTail;
+        RenderBuffer *m_SampleQueue;
+        RenderBuffer **m_SampleQueueTail;
     };
 }
 

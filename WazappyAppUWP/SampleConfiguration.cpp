@@ -5,7 +5,7 @@
 #include "MainPage.xaml.h"
 #include "SampleConfiguration.h"
 
-using namespace Wazappy;
+using namespace WazappyApp;
 
 Platform::Array<Scenario>^ MainPage::scenariosInner = ref new Platform::Array<Scenario>
 {

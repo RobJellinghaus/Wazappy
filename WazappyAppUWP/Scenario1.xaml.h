@@ -21,7 +21,7 @@
 
 using namespace Windows::Devices::Enumeration;
 
-namespace Wazappy
+namespace WazappyApp
 {
 	// Custom properties defined in mmdeviceapi.h in the format "{GUID} PID"
 	static Platform::String^ PKEY_AudioEndpoint_Supports_EventDriven_Mode = "{1da5d803-d492-4edd-8c23-e0c0ffee7f0e} 7";
@@ -41,7 +41,7 @@ namespace Wazappy
 		void EnumerateAudioDevicesAsync();
 
 	private:
-		MainPage ^ rootPage;
-		Windows::UI::Xaml::Controls::ListBox^   m_DevicesList;
+		MainPage^ rootPage;
+		Windows::UI::Xaml::Controls::ListBox^ m_DevicesList;
 	};
 }

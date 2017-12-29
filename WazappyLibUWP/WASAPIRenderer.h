@@ -54,28 +54,28 @@ namespace Wazappy
         HRESULT GetMFSample( UINT32 FramesAvailable );
 
     private:
-        Platform::String^   m_DeviceIdString;
-        UINT32              m_BufferFrames;
-        HANDLE              m_SampleReadyEvent;
-        MFWORKITEM_KEY      m_SampleReadyKey;
-        CRITICAL_SECTION    m_CritSec;
+        Platform::String^ m_DeviceIdString;
+        UINT32 m_BufferFrames;
+        HANDLE m_SampleReadyEvent;
+        MFWORKITEM_KEY m_SampleReadyKey;
+        CRITICAL_SECTION m_CritSec;
 
-		DeviceState			m_deviceState;
+		DeviceState m_deviceState;
 
-        WAVEFORMATEX           *m_MixFormat;
-        UINT32                  m_DefaultPeriodInFrames;
-        UINT32                  m_FundamentalPeriodInFrames;
-        UINT32                  m_MaxPeriodInFrames;
-        UINT32                  m_MinPeriodInFrames;
+        WAVEFORMATEX *m_MixFormat;
+        UINT32 m_DefaultPeriodInFrames;
+        UINT32 m_FundamentalPeriodInFrames;
+        UINT32 m_MaxPeriodInFrames;
+        UINT32 m_MinPeriodInFrames;
 
-        IAudioClient3          *m_AudioClient;
-        IAudioRenderClient     *m_AudioRenderClient;
-        IMFAsyncResult         *m_SampleReadyAsyncResult;
+        IAudioClient3 *m_AudioClient;
+        IAudioRenderClient *m_AudioRenderClient;
+        IMFAsyncResult *m_SampleReadyAsyncResult;
 
-        DEVICEPROPS                    m_DeviceProps;
+        DEVICEPROPS m_DeviceProps;
 
-        ToneSampleGenerator    *m_ToneSource;
-        MFSampleGenerator      *m_MFSource;
+        ToneSampleGenerator *m_ToneSource;
+        MFSampleGenerator *m_MFSource;
     };
 }
 
