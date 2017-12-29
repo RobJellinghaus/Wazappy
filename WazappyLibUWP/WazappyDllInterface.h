@@ -84,6 +84,7 @@ namespace Wazappy
 			{
 				nodeType = other.nodeType;
 				nodeId = other.nodeId;
+				return *this;
 			}
 
 			// Default node handle: invalid for all use

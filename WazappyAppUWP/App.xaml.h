@@ -13,7 +13,7 @@ namespace WazappyApp
     ref class App sealed
     {
     protected:
-        virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ e);
+        virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ e) override;
 
     internal:
         App();

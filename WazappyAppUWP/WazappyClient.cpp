@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "pch.h"
+
 #include "WazappyClient.h"
 #include "DeviceStateChangedEvent.h"
 

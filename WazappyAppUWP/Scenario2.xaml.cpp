@@ -467,7 +467,7 @@ void Scenario2::InitializeDevice()
 
 		// Get a pointer to the device event interface
 		// TODO: make this keep the DeviceStateEvent on this side and wire up the callback functor
-		m_StateChangedEvent = m_spRenderer->GetDeviceStateEvent();
+		m_StateChangedEvent = ref new DeviceStateChangedEvent();
 
 		if (nullptr == m_StateChangedEvent)
 		{

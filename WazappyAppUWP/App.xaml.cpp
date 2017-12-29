@@ -30,7 +30,7 @@ using namespace Windows::UI::Xaml::Navigation;
 App::App()
 {
     InitializeComponent();
-    Suspending += ref new Windows::UI::Xaml::SuspendingEventHandler(this, &Wazappy::App::OnSuspending);
+    Suspending += ref new Windows::UI::Xaml::SuspendingEventHandler(this, &WazappyApp::App::OnSuspending);
 }
 
 /// <summary>
