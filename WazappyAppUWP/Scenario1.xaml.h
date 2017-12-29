@@ -1,17 +1,7 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-//
-// Scenario1.xaml.h
-// Declaration of the Scenario1 class
-//
+﻿// The Wazappy project implements a WASAPI-based sound engine for Windows UWP and desktop apps.
+// https://github.com/RobJellinghaus/Wazappy
+// Licensed under the MIT License.
+// This file based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #pragma once
 
