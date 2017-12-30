@@ -15,7 +15,7 @@ using namespace Wazappy;
 //
 //  WASAPICapture()
 //
-WASAPICapture::WASAPICapture() :
+WASAPICaptureDevice::WASAPICaptureDevice() :
     m_BufferFrames( 0 ),
     m_cbDataSize( 0 ),
     m_cbHeaderSize( 0 ),
@@ -60,7 +60,7 @@ WASAPICapture::WASAPICapture() :
 //
 //  ~WASAPICapture()
 //
-WASAPICapture::~WASAPICapture()
+WASAPICaptureDevice::~WASAPICaptureDevice()
 {
     SAFE_RELEASE( m_AudioClient );
     SAFE_RELEASE( m_AudioCaptureClient );
@@ -89,7 +89,7 @@ WASAPICapture::~WASAPICapture()
 //  Activates the default audio capture on a asynchronous callback thread.  This needs
 //  to be called from the main UI thread.
 //
-HRESULT WASAPICapture::InitializeAudioDeviceAsync()
+HRESULT WASAPICaptureDevice::InitializeAudioDeviceAsync()
 {
     ComPtr<IActivateAudioInterfaceAsyncOperation> asyncOp;
     HRESULT hr = S_OK;
@@ -114,7 +114,7 @@ HRESULT WASAPICapture::InitializeAudioDeviceAsync()
 //  Callback implementation of ActivateAudioInterfaceAsync function.  This will be called on MTA thread
 //  when results of the activation are available.
 //
-HRESULT WASAPICapture::ActivateCompleted( IActivateAudioInterfaceAsyncOperation *operation )
+HRESULT WASAPICaptureDevice::ActivateCompleted( IActivateAudioInterfaceAsyncOperation *operation )
 {
     HRESULT hr = S_OK;
     HRESULT hrActivateResult = S_OK;
@@ -298,7 +298,7 @@ exit:
 //
 //  Creates a WAV file in KnownFolders::MusicLibrary
 //
-HRESULT WASAPICapture::CreateWAVFile()
+HRESULT WASAPICaptureDevice::CreateWAVFile()
 {
     // Create the WAV file, appending a number if file already exists
     concurrency::task<StorageFile^>( KnownFolders::MusicLibrary->CreateFileAsync( AUDIO_FILE_NAME, CreationCollisionOption::GenerateUniqueName )).then(
@@ -387,7 +387,7 @@ HRESULT WASAPICapture::CreateWAVFile()
 //
 //  The size values were not known when we originally wrote the header, so now go through and fix the values
 //
-HRESULT WASAPICapture::FixWAVHeader()
+HRESULT WASAPICaptureDevice::FixWAVHeader()
 {
     auto DataSizeByte = ref new Platform::Array<BYTE>( reinterpret_cast<BYTE*>( &m_cbDataSize ), sizeof(DWORD) );
     
@@ -462,7 +462,7 @@ HRESULT WASAPICapture::InitializeScopeData()
 //
 //  Starts asynchronous capture on a separate thread via MF Work Item
 //
-HRESULT WASAPICapture::StartCaptureAsync()
+HRESULT WASAPICaptureDevice::StartCaptureAsync()
 {
     HRESULT hr = S_OK;
 
@@ -482,7 +482,7 @@ HRESULT WASAPICapture::StartCaptureAsync()
 //
 //  Callback method to start capture
 //
-HRESULT WASAPICapture::OnStartCapture( IMFAsyncResult* ignore )
+HRESULT WASAPICaptureDevice::OnStartCapture( IMFAsyncResult* ignore )
 {
     HRESULT hr = S_OK;
 
@@ -506,7 +506,7 @@ HRESULT WASAPICapture::OnStartCapture( IMFAsyncResult* ignore )
 //
 //  Stop capture asynchronously via MF Work Item
 //
-HRESULT WASAPICapture::StopCaptureAsync()
+HRESULT WASAPICaptureDevice::StopCaptureAsync()
 {
     if ( (m_deviceState != DeviceState::Capturing) &&
          (m_deviceState != DeviceState::InError) )
@@ -524,7 +524,7 @@ HRESULT WASAPICapture::StopCaptureAsync()
 //
 //  Callback method to stop capture
 //
-HRESULT WASAPICapture::OnStopCapture( IMFAsyncResult* pResult )
+HRESULT WASAPICaptureDevice::OnStopCapture( IMFAsyncResult* pResult )
 {
     // Stop capture by cancelling Work Item
     // Cancel the queued work item (if any)
@@ -559,7 +559,7 @@ HRESULT WASAPICapture::OnStopCapture( IMFAsyncResult* pResult )
 //
 //  Finalizes WAV file on a separate thread via MF Work Item
 //
-HRESULT WASAPICapture::FinishCaptureAsync()
+HRESULT WASAPICaptureDevice::FinishCaptureAsync()
 {
     // We should be flushing when this is called
     if (m_deviceState == DeviceState::Flushing)
@@ -577,7 +577,7 @@ HRESULT WASAPICapture::FinishCaptureAsync()
 //  Because of the asynchronous nature of the MF Work Queues and the DataWriter, there could still be
 //  a sample processing.  So this will get called to finalize the WAV header.
 //
-HRESULT WASAPICapture::OnFinishCapture( IMFAsyncResult* pResult )
+HRESULT WASAPICaptureDevice::OnFinishCapture( IMFAsyncResult* pResult )
 {
     // FixWAVHeader will set the DeviceStateStopped when all async tasks are complete
     return FixWAVHeader();
@@ -588,7 +588,7 @@ HRESULT WASAPICapture::OnFinishCapture( IMFAsyncResult* pResult )
 //
 //  Callback method when ready to fill sample buffer
 //
-HRESULT WASAPICapture::OnSampleReady( IMFAsyncResult* pResult )
+HRESULT WASAPICaptureDevice::OnSampleReady( IMFAsyncResult* pResult )
 {
     HRESULT hr = S_OK;
 
@@ -615,7 +615,7 @@ HRESULT WASAPICapture::OnSampleReady( IMFAsyncResult* pResult )
 //
 //  Called when audio device fires m_SampleReadyEvent
 //
-HRESULT WASAPICapture::OnAudioSampleRequested( Platform::Boolean IsSilence )
+HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence )
 {
     HRESULT hr = S_OK;
     UINT32 FramesAvailable = 0;
@@ -747,7 +747,7 @@ exit:
 //
 //  Copies sample data to the buffer array and fires the event
 //
-HRESULT WASAPICapture::ProcessScopeData( BYTE* pData, DWORD cbBytes )
+HRESULT WASAPICaptureDevice::ProcessScopeData( BYTE* pData, DWORD cbBytes )
 {
     HRESULT hr = S_OK;
 
@@ -794,7 +794,7 @@ HRESULT WASAPICapture::ProcessScopeData( BYTE* pData, DWORD cbBytes )
 //
 //  Callback method to stop capture
 //
-HRESULT WASAPICapture::OnSendScopeData( IMFAsyncResult* pResult )
+HRESULT WASAPICaptureDevice::OnSendScopeData( IMFAsyncResult* pResult )
 {
     HRESULT hr = S_OK;
     CAsyncState *pState = nullptr;
@@ -815,7 +815,7 @@ HRESULT WASAPICapture::OnSendScopeData( IMFAsyncResult* pResult )
 //
 //  Sets various properties that the user defines in the scenario
 //
-HRESULT WASAPICapture::SetProperties(CAPTUREDEVICEPROPS props)
+HRESULT WASAPICaptureDevice::SetProperties(CAPTUREDEVICEPROPS props)
 {
     m_DeviceProps = props;
     return S_OK;

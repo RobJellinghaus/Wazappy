@@ -3,7 +3,7 @@
 // Licensed under the MIT License.
 // This file based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
-#include "WazappyDllInterface.h"
+#include "WASAPIDevice.h"
 
 using namespace Microsoft::WRL;
 using namespace Windows::Media::Devices;
@@ -18,29 +18,29 @@ using namespace Windows::Storage::Streams;
 namespace Wazappy
 {
     // Primary WASAPI Capture Class
-    class WASAPICapture :
-        public RuntimeClass< RuntimeClassFlags< ClassicCom >, FtmBase, IActivateAudioInterfaceCompletionHandler > 
+    class WASAPICaptureDevice : public WASAPIDevice
     {
     public:
-        WASAPICapture();
+        WASAPICaptureDevice();
 
         HRESULT SetProperties(CAPTUREDEVICEPROPS props);
+
         HRESULT InitializeAudioDeviceAsync();
         HRESULT StartCaptureAsync();
         HRESULT StopCaptureAsync();
         HRESULT FinishCaptureAsync();
 
-        METHODASYNCCALLBACK( WASAPICapture, StartCapture, OnStartCapture );
-        METHODASYNCCALLBACK( WASAPICapture, StopCapture, OnStopCapture );
-        METHODASYNCCALLBACK( WASAPICapture, SampleReady, OnSampleReady );
-        METHODASYNCCALLBACK( WASAPICapture, FinishCapture, OnFinishCapture );
-        METHODASYNCCALLBACK( WASAPICapture, SendScopeData, OnSendScopeData );
+        METHODASYNCCALLBACK( WASAPICaptureDevice, StartCapture, OnStartCapture );
+        METHODASYNCCALLBACK( WASAPICaptureDevice, StopCapture, OnStopCapture );
+        METHODASYNCCALLBACK( WASAPICaptureDevice, SampleReady, OnSampleReady );
+        METHODASYNCCALLBACK( WASAPICaptureDevice, FinishCapture, OnFinishCapture );
+        METHODASYNCCALLBACK( WASAPICaptureDevice, SendScopeData, OnSendScopeData );
 
         // IActivateAudioInterfaceCompletionHandler
         STDMETHOD(ActivateCompleted)( IActivateAudioInterfaceAsyncOperation *operation );
 
     private:
-        ~WASAPICapture();
+        ~WASAPICaptureDevice();
 
         HRESULT OnStartCapture( IMFAsyncResult* pResult );
         HRESULT OnStopCapture( IMFAsyncResult* pResult );
@@ -50,19 +50,15 @@ namespace Wazappy
 
         HRESULT CreateWAVFile();
         HRESULT FixWAVHeader();
-        HRESULT OnAudioSampleRequested( Platform::Boolean IsSilence = false );
+
+		virtual HRESULT OnAudioSampleRequested( Platform::Boolean IsSilence = false );
+		virtual bool IsDeviceActive(DeviceState deviceState);
+
         HRESULT InitializeScopeData();
         HRESULT ProcessScopeData( BYTE* pData, DWORD cbBytes );
         
     private:
-        Platform::String^ m_DeviceIdString;
-        UINT32 m_BufferFrames;
-        HANDLE m_SampleReadyEvent;
-        MFWORKITEM_KEY m_SampleReadyKey;
-        CRITICAL_SECTION m_CritSec;
         DWORD m_dwQueueID;
-
-		DeviceState m_deviceState;
 
         DWORD m_cbHeaderSize;
         DWORD m_cbDataSize;
@@ -72,14 +68,8 @@ namespace Wazappy
         IRandomAccessStream^ m_ContentStream;
         IOutputStream^ m_OutputStream;
         DataWriter^ m_WAVDataWriter;
-        WAVEFORMATEX *m_MixFormat;
-        IAudioClient3 *m_AudioClient;
-        UINT32 m_DefaultPeriodInFrames;
-        UINT32 m_FundamentalPeriodInFrames;
-        UINT32 m_MaxPeriodInFrames;
-        UINT32 m_MinPeriodInFrames;
+
         IAudioCaptureClient *m_AudioCaptureClient;
-        IMFAsyncResult *m_SampleReadyAsyncResult;
 
         Platform::Array<int, 1>^ m_PlotData;
         UINT32 m_cPlotDataMax;

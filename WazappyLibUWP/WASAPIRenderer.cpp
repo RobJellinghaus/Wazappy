@@ -12,7 +12,7 @@ using namespace Wazappy;
 //
 //  WASAPIRenderer()
 //
-WASAPIRenderer::WASAPIRenderer() :
+WASAPIRenderDevice::WASAPIRenderDevice() :
     m_BufferFrames( 0 ),
     m_deviceState( DeviceState::Uninitialized ),
     m_AudioClient( nullptr ),
@@ -37,7 +37,7 @@ WASAPIRenderer::WASAPIRenderer() :
 //
 //  ~WASAPIRenderer()
 //
-WASAPIRenderer::~WASAPIRenderer()
+WASAPIRenderDevice::~WASAPIRenderDevice()
 {
     SAFE_RELEASE( m_AudioClient );
     SAFE_RELEASE( m_AudioRenderClient );
@@ -60,7 +60,7 @@ WASAPIRenderer::~WASAPIRenderer()
 //  Activates the default audio renderer on a asynchronous callback thread.  This needs
 //  to be called from the main UI thread.
 //
-HRESULT WASAPIRenderer::InitializeAudioDeviceAsync()
+HRESULT WASAPIRenderDevice::InitializeAudioDeviceAsync()
 {
     IActivateAudioInterfaceAsyncOperation *asyncOp;
     HRESULT hr = S_OK;
@@ -68,7 +68,7 @@ HRESULT WASAPIRenderer::InitializeAudioDeviceAsync()
     // Get a string representing the Default Audio Device Renderer
     m_DeviceIdString = MediaDevice::GetDefaultAudioRenderId( Windows::Media::Devices::AudioDeviceRole::Default );
 
-   // This call must be made on the main UI thread.  Async operation will call back to 
+    // This call must be made on the main UI thread.  Async operation will call back to 
     // IActivateAudioInterfaceCompletionHandler::ActivateCompleted, which must be an agile interface implementation
     hr = ActivateAudioInterfaceAsync( m_DeviceIdString->Data(), __uuidof(IAudioClient3), nullptr, this, &asyncOp );
     if (FAILED( hr ))
@@ -87,7 +87,7 @@ HRESULT WASAPIRenderer::InitializeAudioDeviceAsync()
 //  Callback implementation of ActivateAudioInterfaceAsync function.  This will be called on MTA thread
 //  when results of the activation are available.
 //
-HRESULT WASAPIRenderer::ActivateCompleted( IActivateAudioInterfaceAsyncOperation *operation )
+HRESULT WASAPIRenderDevice::ActivateCompleted( IActivateAudioInterfaceAsyncOperation *operation )
 {
     HRESULT hr = S_OK;
     HRESULT hrActivateResult = S_OK;
@@ -196,7 +196,7 @@ exit:
 //
 //  Sets various properties that the user defines in the scenario
 //
-HRESULT WASAPIRenderer::SetProperties( DEVICEPROPS props )
+HRESULT WASAPIRenderDevice::SetProperties( DEVICEPROPS props )
 {
     m_DeviceProps = props;
     return S_OK;
@@ -207,7 +207,7 @@ HRESULT WASAPIRenderer::SetProperties( DEVICEPROPS props )
 //
 //  Get the time in seconds between passes of the audio device
 //
-UINT32 WASAPIRenderer::GetBufferFramesPerPeriod()
+UINT32 WASAPIRenderDevice::GetBufferFramesPerPeriod()
 {
     REFERENCE_TIME defaultDevicePeriod = 0;
     REFERENCE_TIME minimumDevicePeriod = 0;
@@ -244,7 +244,7 @@ UINT32 WASAPIRenderer::GetBufferFramesPerPeriod()
 //
 //  Sets additional playback parameters and opts into hardware offload
 //
-HRESULT WASAPIRenderer::ConfigureDeviceInternal()
+HRESULT WASAPIRenderDevice::ConfigureDeviceInternal()
 {
     if (m_deviceState != DeviceState::Activated)
     {
@@ -296,7 +296,7 @@ HRESULT WASAPIRenderer::ConfigureDeviceInternal()
 //
 //  Verifies the user specified buffer value for hardware offload
 //
-HRESULT WASAPIRenderer::ValidateBufferValue()
+HRESULT WASAPIRenderDevice::ValidateBufferValue()
 {
     HRESULT hr = S_OK;
 
@@ -331,7 +331,7 @@ HRESULT WASAPIRenderer::ValidateBufferValue()
 //
 //  SetVolumeOnSession()
 //
-HRESULT WASAPIRenderer::SetVolumeOnSession( UINT32 volume )
+HRESULT WASAPIRenderDevice::SetVolumeOnSession( UINT32 volume )
 {
     if (volume > 100)
     {
@@ -363,7 +363,7 @@ exit:
 //
 //  Configures tone or file playback
 //
-HRESULT WASAPIRenderer::ConfigureSource()
+HRESULT WASAPIRenderDevice::ConfigureSource()
 {
     HRESULT hr = S_OK;
     UINT32 FramesPerPeriod = GetBufferFramesPerPeriod();
@@ -402,7 +402,7 @@ HRESULT WASAPIRenderer::ConfigureSource()
 //
 //  Starts asynchronous playback on a separate thread via MF Work Item
 //
-HRESULT WASAPIRenderer::StartPlaybackAsync()
+HRESULT WASAPIRenderDevice::StartPlaybackAsync()
 {
     HRESULT hr = S_OK;
 
@@ -436,7 +436,7 @@ HRESULT WASAPIRenderer::StartPlaybackAsync()
 //
 //  Callback method to start playback
 //
-HRESULT WASAPIRenderer::OnStartPlayback( IMFAsyncResult* pResult )
+HRESULT WASAPIRenderDevice::OnStartPlayback( IMFAsyncResult* pResult )
 {
     HRESULT hr = S_OK;
 
@@ -479,7 +479,7 @@ exit:
 //
 //  Stop playback asynchronously via MF Work Item
 //
-HRESULT WASAPIRenderer::StopPlaybackAsync()
+HRESULT WASAPIRenderDevice::StopPlaybackAsync()
 {
     if ( (m_deviceState != DeviceState::Playing) &&
          (m_deviceState != DeviceState::Paused) &&
@@ -498,7 +498,7 @@ HRESULT WASAPIRenderer::StopPlaybackAsync()
 //
 //  Callback method to stop playback
 //
-HRESULT WASAPIRenderer::OnStopPlayback( IMFAsyncResult* pResult )
+HRESULT WASAPIRenderDevice::OnStopPlayback( IMFAsyncResult* pResult )
 {
     // Stop playback by cancelling Work Item
     // Cancel the queued work item (if any)
@@ -535,7 +535,7 @@ HRESULT WASAPIRenderer::OnStopPlayback( IMFAsyncResult* pResult )
 //
 //  Pause playback asynchronously via MF Work Item
 //
-HRESULT WASAPIRenderer::PausePlaybackAsync()
+HRESULT WASAPIRenderDevice::PausePlaybackAsync()
 {
     if ( (m_deviceState !=  DeviceState::Playing) &&
          (m_deviceState != DeviceState::InError) )
@@ -554,7 +554,7 @@ HRESULT WASAPIRenderer::PausePlaybackAsync()
 //
 //  Callback method to pause playback
 //
-HRESULT WASAPIRenderer::OnPausePlayback( IMFAsyncResult* pResult )
+HRESULT WASAPIRenderDevice::OnPausePlayback( IMFAsyncResult* pResult )
 {
     m_AudioClient->Stop();
     m_deviceState = DeviceState::Paused;
@@ -566,7 +566,7 @@ HRESULT WASAPIRenderer::OnPausePlayback( IMFAsyncResult* pResult )
 //
 //  Callback method when ready to fill sample buffer
 //
-HRESULT WASAPIRenderer::OnSampleReady( IMFAsyncResult* pResult )
+HRESULT WASAPIRenderDevice::OnSampleReady( IMFAsyncResult* pResult )
 {
     HRESULT hr = S_OK;
 
@@ -593,7 +593,7 @@ HRESULT WASAPIRenderer::OnSampleReady( IMFAsyncResult* pResult )
 //
 //  Called when audio device fires m_SampleReadyEvent
 //
-HRESULT WASAPIRenderer::OnAudioSampleRequested( Platform::Boolean IsSilence )
+HRESULT WASAPIRenderDevice::OnAudioSampleRequested( Platform::Boolean IsSilence )
 {
     HRESULT hr = S_OK;
     UINT32 PaddingFrames = 0;
@@ -678,7 +678,7 @@ exit:
 //
 //  Fills buffer with a tone sample
 //
-HRESULT WASAPIRenderer::GetToneSample( UINT32 FramesAvailable )
+HRESULT WASAPIRenderDevice::GetToneSample( UINT32 FramesAvailable )
 {
     HRESULT hr = S_OK;
     BYTE *Data;
@@ -719,7 +719,7 @@ HRESULT WASAPIRenderer::GetToneSample( UINT32 FramesAvailable )
 //
 //  Fills buffer with a MF sample
 //
-HRESULT WASAPIRenderer::GetMFSample( UINT32 FramesAvailable )
+HRESULT WASAPIRenderDevice::GetMFSample( UINT32 FramesAvailable )
 {
     HRESULT hr = S_OK;
     BYTE *Data = nullptr;
