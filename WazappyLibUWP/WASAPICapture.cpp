@@ -16,33 +16,17 @@ using namespace Wazappy;
 //  WASAPICapture()
 //
 WASAPICaptureDevice::WASAPICaptureDevice() :
-    m_BufferFrames( 0 ),
     m_cbDataSize( 0 ),
     m_cbHeaderSize( 0 ),
     m_cbFlushCounter( 0 ),
     m_dwQueueID( 0 ),
-    m_deviceState( DeviceState::Uninitialized ),
-    m_AudioClient( nullptr ),
     m_AudioCaptureClient( nullptr ),
-    m_SampleReadyAsyncResult( nullptr ),
     m_ContentStream( nullptr ),
     m_OutputStream( nullptr ),
     m_WAVDataWriter( nullptr ),
     m_PlotData( nullptr ),
     m_fWriting( false )
 {
-    // Create events for sample ready or user stop
-    m_SampleReadyEvent = CreateEventEx( nullptr, nullptr, 0, EVENT_ALL_ACCESS );
-    if (nullptr == m_SampleReadyEvent)
-    {
-        ThrowIfFailed( HRESULT_FROM_WIN32( GetLastError() ) );
-    }
-
-    if (!InitializeCriticalSectionEx( &m_CritSec, 0, 0 ))
-    {
-        ThrowIfFailed( HRESULT_FROM_WIN32( GetLastError() ) );
-    }
-
     // Register MMCSS work queue
     HRESULT hr = S_OK;
     DWORD dwTaskID = 0;
@@ -62,16 +46,8 @@ WASAPICaptureDevice::WASAPICaptureDevice() :
 //
 WASAPICaptureDevice::~WASAPICaptureDevice()
 {
-    SAFE_RELEASE( m_AudioClient );
     SAFE_RELEASE( m_AudioCaptureClient );
-    SAFE_RELEASE( m_SampleReadyAsyncResult );
-
-    if (INVALID_HANDLE_VALUE != m_SampleReadyEvent)
-    {
-        CloseHandle( m_SampleReadyEvent );
-        m_SampleReadyEvent = INVALID_HANDLE_VALUE;
-    }
-
+    
     MFUnlockWorkQueue( m_dwQueueID );
 
     m_ContentStream = nullptr;
@@ -79,149 +55,89 @@ WASAPICaptureDevice::~WASAPICaptureDevice()
     m_WAVDataWriter = nullptr;
 
     m_PlotData = nullptr;
-
-    DeleteCriticalSection( &m_CritSec );
 }
 
-//
-//  InitializeAudioDeviceAsync()
-//
-//  Activates the default audio capture on a asynchronous callback thread.  This needs
-//  to be called from the main UI thread.
-//
-HRESULT WASAPICaptureDevice::InitializeAudioDeviceAsync()
+Platform::String^ WASAPICaptureDevice::GetDeviceId()
 {
-    ComPtr<IActivateAudioInterfaceAsyncOperation> asyncOp;
-    HRESULT hr = S_OK;
-
-    // Get a string representing the Default Audio Capture Device
-    m_DeviceIdString = MediaDevice::GetDefaultAudioCaptureId( Windows::Media::Devices::AudioDeviceRole::Default );
-
-    // This call must be made on the main UI thread.  Async operation will call back to 
-    // IActivateAudioInterfaceCompletionHandler::ActivateCompleted, which must be an agile interface implementation
-    hr = ActivateAudioInterfaceAsync( m_DeviceIdString->Data(), __uuidof(IAudioClient3), nullptr, this, &asyncOp );
-    if (FAILED( hr ))
-    {
-        m_deviceState = DeviceState::InError;
-    }
-
-    return hr;
+	// Get a string representing the Default Audio Capture Device
+	return MediaDevice::GetDefaultAudioCaptureId(Windows::Media::Devices::AudioDeviceRole::Default);
 }
 
-//
-//  ActivateCompleted()
-//
-//  Callback implementation of ActivateAudioInterfaceAsync function.  This will be called on MTA thread
-//  when results of the activation are available.
-//
+HRESULT WASAPICaptureDevice::ConfigureDeviceInternal()
+{
+	HRESULT hr = S_OK;
+	// convert from Float to 16-bit PCM
+	switch (m_MixFormat->wFormatTag)
+	{
+	case WAVE_FORMAT_PCM:
+		// nothing to do
+		break;
+
+	case WAVE_FORMAT_IEEE_FLOAT:
+		m_MixFormat->wFormatTag = WAVE_FORMAT_PCM;
+		m_MixFormat->wBitsPerSample = 16;
+		m_MixFormat->nBlockAlign = m_MixFormat->nChannels * m_MixFormat->wBitsPerSample / BITS_PER_BYTE;
+		m_MixFormat->nAvgBytesPerSec = m_MixFormat->nSamplesPerSec * m_MixFormat->nBlockAlign;
+		break;
+
+	case WAVE_FORMAT_EXTENSIBLE:
+	{
+		WAVEFORMATEXTENSIBLE *pWaveFormatExtensible = reinterpret_cast<WAVEFORMATEXTENSIBLE *>(m_MixFormat);
+		if (pWaveFormatExtensible->SubFormat == KSDATAFORMAT_SUBTYPE_PCM)
+		{
+			// nothing to do
+		}
+		else if (pWaveFormatExtensible->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
+		{
+			pWaveFormatExtensible->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+			pWaveFormatExtensible->Format.wBitsPerSample = 16;
+			pWaveFormatExtensible->Format.nBlockAlign =
+				pWaveFormatExtensible->Format.nChannels *
+				pWaveFormatExtensible->Format.wBitsPerSample /
+				BITS_PER_BYTE;
+			pWaveFormatExtensible->Format.nAvgBytesPerSec =
+				pWaveFormatExtensible->Format.nSamplesPerSec *
+				pWaveFormatExtensible->Format.nBlockAlign;
+			pWaveFormatExtensible->Samples.wValidBitsPerSample =
+				pWaveFormatExtensible->Format.wBitsPerSample;
+
+			// leave the channel mask as-is
+		}
+		else
+		{
+			// we can only handle float or PCM
+			hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+		}
+		break;
+	}
+
+	default:
+		// we can only handle float or PCM
+		hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+		break;
+	}
+
+	// The wfx parameter below is optional (Its needed only for MATCH_FORMAT clients). Otherwise, wfx will be assumed 
+	// to be the current engine format based on the processing mode for this stream
+	hr = m_AudioClient->GetSharedModeEnginePeriod(m_MixFormat, &m_DefaultPeriodInFrames, &m_FundamentalPeriodInFrames, &m_MinPeriodInFrames, &m_MaxPeriodInFrames);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+
+	return hr;
+}
+
 HRESULT WASAPICaptureDevice::ActivateCompletedInternal()
 {
-    HRESULT hr = S_OK;
-    // convert from Float to 16-bit PCM
-    switch ( m_MixFormat->wFormatTag )
-    {
-    case WAVE_FORMAT_PCM:
-        // nothing to do
-        break;
-
-    case WAVE_FORMAT_IEEE_FLOAT:
-        m_MixFormat->wFormatTag = WAVE_FORMAT_PCM;
-        m_MixFormat->wBitsPerSample = 16;
-        m_MixFormat->nBlockAlign = m_MixFormat->nChannels * m_MixFormat->wBitsPerSample / BITS_PER_BYTE;
-        m_MixFormat->nAvgBytesPerSec = m_MixFormat->nSamplesPerSec * m_MixFormat->nBlockAlign;
-        break;
-
-    case WAVE_FORMAT_EXTENSIBLE:
-        {
-            WAVEFORMATEXTENSIBLE *pWaveFormatExtensible = reinterpret_cast<WAVEFORMATEXTENSIBLE *>(m_MixFormat);
-            if ( pWaveFormatExtensible->SubFormat == KSDATAFORMAT_SUBTYPE_PCM )
-            {
-                // nothing to do
-            }
-            else if ( pWaveFormatExtensible->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT )
-            {
-                pWaveFormatExtensible->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
-                pWaveFormatExtensible->Format.wBitsPerSample = 16;
-                pWaveFormatExtensible->Format.nBlockAlign =
-                    pWaveFormatExtensible->Format.nChannels *
-                    pWaveFormatExtensible->Format.wBitsPerSample /
-                    BITS_PER_BYTE;
-                pWaveFormatExtensible->Format.nAvgBytesPerSec =
-                    pWaveFormatExtensible->Format.nSamplesPerSec *
-                    pWaveFormatExtensible->Format.nBlockAlign;
-                pWaveFormatExtensible->Samples.wValidBitsPerSample =
-                    pWaveFormatExtensible->Format.wBitsPerSample;
-
-                // leave the channel mask as-is
-            }
-            else
-            {
-                // we can only handle float or PCM
-                hr = HRESULT_FROM_WIN32( ERROR_NOT_FOUND );
-            }
-            break;
-        }
-
-    default:
-        // we can only handle float or PCM
-        hr = HRESULT_FROM_WIN32( ERROR_NOT_FOUND );
-        break;
-    }
-
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
-    // The wfx parameter below is optional (Its needed only for MATCH_FORMAT clients). Otherwise, wfx will be assumed 
-    // to be the current engine format based on the processing mode for this stream
-    hr = m_AudioClient->GetSharedModeEnginePeriod(m_MixFormat, &m_DefaultPeriodInFrames, &m_FundamentalPeriodInFrames, &m_MinPeriodInFrames, &m_MaxPeriodInFrames);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    // Initialize the AudioClient in Shared Mode with the user specified buffer
-    hr = m_AudioClient->InitializeSharedAudioStream(
-        AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-        m_MinPeriodInFrames,
-        m_MixFormat,
-        nullptr);
-
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
-    // Get the maximum size of the AudioClient Buffer
-    hr = m_AudioClient->GetBufferSize( &m_BufferFrames );
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
     // Get the capture client
-    hr = m_AudioClient->GetService( __uuidof(IAudioCaptureClient), (void**) &m_AudioCaptureClient );
+    HRESULT hr = m_AudioClient->GetService( __uuidof(IAudioCaptureClient), (void**) &m_AudioCaptureClient );
     if (FAILED( hr ))
     {
         goto exit;
     }
 
-    // Create Async callback for sample events
-    hr = MFCreateAsyncResult( nullptr, &m_xSampleReady, nullptr, &m_SampleReadyAsyncResult );
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
-    // Sets the event handle that the system signals when an audio buffer is ready to be processed by the client
-    hr = m_AudioClient->SetEventHandle( m_SampleReadyEvent );
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
-    // Create the visualization array
+	// Create the visualization array
 	/* B4CR:
     hr = InitializeScopeData();
     if (FAILED( hr ))
@@ -240,14 +156,11 @@ HRESULT WASAPICaptureDevice::ActivateCompletedInternal()
 exit:
     if (FAILED( hr ))
     {
-        m_deviceState = DeviceState::InError;
-        SAFE_RELEASE( m_AudioClient );
+        m_DeviceState = DeviceState::InError;
         SAFE_RELEASE( m_AudioCaptureClient );
-        SAFE_RELEASE( m_SampleReadyAsyncResult );
     }
-    
-    // Need to return S_OK
-    return S_OK;
+
+	return hr;
 }
 
 //
@@ -328,11 +241,11 @@ HRESULT WASAPICaptureDevice::CreateWAVFile()
     {
         try
         {
-            m_deviceState = DeviceState::Initialized;
+            m_DeviceState = DeviceState::Initialized;
         }
         catch (Platform::Exception ^e)
         {
-            m_deviceState = DeviceState::InError;
+            m_DeviceState = DeviceState::InError;
         }
     });
 
@@ -373,7 +286,7 @@ HRESULT WASAPICaptureDevice::FixWAVHeader()
         .then(
             [this]( bool f )
         {
-            m_deviceState = DeviceState::Stopped;
+            m_DeviceState = DeviceState::Stopped;
         });
     });
 
@@ -424,9 +337,9 @@ HRESULT WASAPICaptureDevice::StartCaptureAsync()
     HRESULT hr = S_OK;
 
     // We should be in the initialzied state if this is the first time through getting ready to capture.
-    if (m_deviceState == DeviceState::Initialized)
+    if (m_DeviceState == DeviceState::Initialized)
     {
-        m_deviceState = DeviceState::Starting;
+        m_DeviceState = DeviceState::Starting;
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStartCapture, nullptr );
     }
 
@@ -447,12 +360,12 @@ HRESULT WASAPICaptureDevice::OnStartCapture( IMFAsyncResult* ignore )
     hr = m_AudioClient->Start();
     if (SUCCEEDED( hr ))
     {
-        m_deviceState = DeviceState::Capturing;
+        m_DeviceState = DeviceState::Capturing;
         MFPutWaitingWorkItem( m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey );
     }
     else
     {
-        m_deviceState = DeviceState::InError;
+        m_DeviceState = DeviceState::InError;
     }
 
     return S_OK;
@@ -465,13 +378,13 @@ HRESULT WASAPICaptureDevice::OnStartCapture( IMFAsyncResult* ignore )
 //
 HRESULT WASAPICaptureDevice::StopCaptureAsync()
 {
-    if ( (m_deviceState != DeviceState::Capturing) &&
-         (m_deviceState != DeviceState::InError) )
+    if ( (m_DeviceState != DeviceState::Capturing) &&
+         (m_DeviceState != DeviceState::InError) )
     {
         return E_NOT_VALID_STATE;
     }
 
-    m_deviceState = DeviceState::Stopping;
+    m_DeviceState = DeviceState::Stopping;
 
     return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStopCapture, nullptr );
 }
@@ -499,7 +412,7 @@ HRESULT WASAPICaptureDevice::OnStopCapture( IMFAsyncResult* pResult )
     // let the async operation completion handle the call.
     if (!m_fWriting)
     {
-        m_deviceState = DeviceState::Flushing;
+        m_DeviceState = DeviceState::Flushing;
 
         concurrency::task<unsigned int>( m_WAVDataWriter->StoreAsync()).then(
             [this]( unsigned int BytesWritten )
@@ -519,7 +432,7 @@ HRESULT WASAPICaptureDevice::OnStopCapture( IMFAsyncResult* pResult )
 HRESULT WASAPICaptureDevice::FinishCaptureAsync()
 {
     // We should be flushing when this is called
-    if (m_deviceState == DeviceState::Flushing)
+    if (m_DeviceState == DeviceState::Flushing)
     {
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xFinishCapture, nullptr ); 
     }
@@ -541,33 +454,6 @@ HRESULT WASAPICaptureDevice::OnFinishCapture( IMFAsyncResult* pResult )
 }
 
 //
-//  OnSampleReady()
-//
-//  Callback method when ready to fill sample buffer
-//
-HRESULT WASAPICaptureDevice::OnSampleReady( IMFAsyncResult* pResult )
-{
-    HRESULT hr = S_OK;
-
-    hr = OnAudioSampleRequested( false );
-
-    if (SUCCEEDED( hr ))
-    {
-        // Re-queue work item for next sample
-        if (m_deviceState ==  DeviceState::Capturing)
-        {
-            hr = MFPutWaitingWorkItem( m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey );
-        }
-    }
-    else
-    {
-        m_deviceState = DeviceState::InError;
-    }
-    
-    return hr;
-}
-
-//
 //  OnAudioSampleRequested()
 //
 //  Called when audio device fires m_SampleReadyEvent
@@ -586,8 +472,8 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
 
     // If this flag is set, we have already queued up the async call to finialize the WAV header
     // So we don't want to grab or write any more data that would possibly give us an invalid size
-    if ( (m_deviceState == DeviceState::Stopping) ||
-         (m_deviceState == DeviceState::Flushing) )
+    if ( (m_DeviceState == DeviceState::Stopping) ||
+         (m_DeviceState == DeviceState::Flushing) )
     {
         goto exit;
     }
@@ -639,8 +525,8 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
         if (dwCaptureFlags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
         {
             // Pass down a discontinuity flag in case the app is interested and reset back to capturing
-            m_deviceState = DeviceState::Discontinuity;
-            m_deviceState = DeviceState::Capturing;
+            m_DeviceState = DeviceState::Discontinuity;
+            m_DeviceState = DeviceState::Capturing;
         }
 
         // Zero out sample if silence
@@ -684,9 +570,9 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
 
                 // We need to check for StopCapture while we are flusing the file.  If it has come through, then we
                 // can go ahead and call FinisheCaptureAsync() to write the WAV header
-                if (m_deviceState == DeviceState::Stopping)
+                if (m_DeviceState == DeviceState::Stopping)
                 {
-                    m_deviceState = DeviceState::Flushing;
+                    m_DeviceState = DeviceState::Flushing;
                     FinishCaptureAsync();
                 }
             });

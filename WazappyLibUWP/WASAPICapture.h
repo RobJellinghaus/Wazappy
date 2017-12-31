@@ -23,21 +23,23 @@ namespace Wazappy
     public:
         WASAPICaptureDevice();
 
-        HRESULT SetProperties(CAPTUREDEVICEPROPS props);
+		virtual Platform::String^ GetDeviceId();
 
-        HRESULT InitializeAudioDeviceAsync();
+		virtual HRESULT ConfigureDeviceInternal();
+		virtual HRESULT ActivateCompletedInternal();
+
+		HRESULT SetProperties(CAPTUREDEVICEPROPS props);
+
         HRESULT StartCaptureAsync();
         HRESULT StopCaptureAsync();
         HRESULT FinishCaptureAsync();
 
         METHODASYNCCALLBACK( WASAPICaptureDevice, StartCapture, OnStartCapture );
         METHODASYNCCALLBACK( WASAPICaptureDevice, StopCapture, OnStopCapture );
-        METHODASYNCCALLBACK( WASAPICaptureDevice, SampleReady, OnSampleReady );
         METHODASYNCCALLBACK( WASAPICaptureDevice, FinishCapture, OnFinishCapture );
         METHODASYNCCALLBACK( WASAPICaptureDevice, SendScopeData, OnSendScopeData );
 
-        // IActivateAudioInterfaceCompletionHandler
-        STDMETHOD(ActivateCompleted)( IActivateAudioInterfaceAsyncOperation *operation );
+		virtual HRESULT ActivateCompletedInternal();
 
     private:
         virtual ~WASAPICaptureDevice();
