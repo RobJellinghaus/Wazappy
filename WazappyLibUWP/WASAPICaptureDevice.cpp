@@ -4,7 +4,7 @@
 // This file based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #include "pch.h"
-#include "WASAPICapture.h"
+#include "WASAPICaptureDevice.h"
 
 using namespace Windows::Storage;
 using namespace Windows::System::Threading;
@@ -662,4 +662,9 @@ HRESULT WASAPICaptureDevice::SetProperties(CAPTUREDEVICEPROPS props)
 {
     m_DeviceProps = props;
     return S_OK;
+}
+
+bool WASAPICaptureDevice::IsDeviceActive(DeviceState deviceState)
+{
+	return deviceState == DeviceState::Capturing;
 }

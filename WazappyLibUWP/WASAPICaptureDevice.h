@@ -39,8 +39,6 @@ namespace Wazappy
         METHODASYNCCALLBACK( WASAPICaptureDevice, FinishCapture, OnFinishCapture );
         METHODASYNCCALLBACK( WASAPICaptureDevice, SendScopeData, OnSendScopeData );
 
-		virtual HRESULT ActivateCompletedInternal();
-
     private:
         virtual ~WASAPICaptureDevice();
 

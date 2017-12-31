@@ -43,7 +43,6 @@ namespace Wazappy
         HRESULT OnStopPlayback( IMFAsyncResult* pResult );
         HRESULT OnPausePlayback( IMFAsyncResult* pResult );
 
-        virtual HRESULT ConfigureDeviceInternal();
         HRESULT ValidateBufferValue();
 
         virtual HRESULT OnAudioSampleRequested( Platform::Boolean IsSilence = false );

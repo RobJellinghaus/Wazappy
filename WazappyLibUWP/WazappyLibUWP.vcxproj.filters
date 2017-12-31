@@ -11,11 +11,11 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="MFSampleGenerator.cpp" />
     <ClCompile Include="ToneSampleGenerator.cpp" />
-    <ClCompile Include="WASAPICapture.cpp" />
-    <ClCompile Include="WASAPIRenderer.cpp" />
     <ClCompile Include="WASAPISession.cpp" />
     <ClCompile Include="WazappyNode.cpp" />
     <ClCompile Include="WASAPIDevice.cpp" />
+    <ClCompile Include="WASAPICaptureDevice.cpp" />
+    <ClCompile Include="WASAPIRenderDevice.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -24,13 +24,13 @@
     <ClInclude Include="DeviceState.h" />
     <ClInclude Include="MFSampleGenerator.h" />
     <ClInclude Include="ToneSampleGenerator.h" />
-    <ClInclude Include="WASAPICapture.h" />
-    <ClInclude Include="WASAPIRenderer.h" />
     <ClInclude Include="WazappyDllInterface.h" />
     <ClInclude Include="Contract.h" />
     <ClInclude Include="WASAPISession.h" />
     <ClInclude Include="WazappyNode.h" />
     <ClInclude Include="WASAPIDevice.h" />
     <ClInclude Include="WazappyDllInterface.cpp" />
+    <ClInclude Include="WASAPICaptureDevice.h" />
+    <ClInclude Include="WASAPIRenderDevice.h" />
   </ItemGroup>
 </Project>

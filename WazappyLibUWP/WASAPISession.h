@@ -4,6 +4,7 @@
 // This file based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #include "WazappyDllInterface.h"
+#include "WASAPIDevice.h"
 
 using namespace Microsoft::WRL;
 using namespace Windows::Media::Devices;
@@ -14,7 +15,7 @@ using namespace Windows::Storage::Streams;
 namespace Wazappy
 {
 	// WASAPI Session 
-	class WASAPISession : 
+	class WASAPISession
 	{
 	private:
 		std::map<NodeId, ComPtr<WASAPIDevice>> s_deviceMap;

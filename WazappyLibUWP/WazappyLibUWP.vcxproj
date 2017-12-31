@@ -201,9 +201,9 @@
     <ClInclude Include="WazappyDllInterface.cpp" />
     <ClInclude Include="MFSampleGenerator.h" />
     <ClInclude Include="ToneSampleGenerator.h" />
-    <ClInclude Include="WASAPICapture.h" />
+    <ClInclude Include="WASAPICaptureDevice.h" />
     <ClInclude Include="WASAPIDevice.h" />
-    <ClInclude Include="WASAPIRenderer.h" />
+    <ClInclude Include="WASAPIRenderDevice.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WASAPISession.h" />
@@ -213,9 +213,9 @@
   <ItemGroup>
     <ClCompile Include="MFSampleGenerator.cpp" />
     <ClCompile Include="ToneSampleGenerator.cpp" />
-    <ClCompile Include="WASAPICapture.cpp" />
+    <ClCompile Include="WASAPICaptureDevice.cpp" />
     <ClCompile Include="WASAPIDevice.cpp" />
-    <ClCompile Include="WASAPIRenderer.cpp" />
+    <ClCompile Include="WASAPIRenderDevice.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

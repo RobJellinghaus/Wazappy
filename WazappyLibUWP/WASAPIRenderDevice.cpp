@@ -4,7 +4,7 @@
 // This file based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
 #include "pch.h"
-#include "WASAPIRenderer.h"
+#include "WASAPIRenderDevice.h"
 
 using namespace Windows::System::Threading;
 using namespace Wazappy;
@@ -29,24 +29,14 @@ WASAPIRenderDevice::~WASAPIRenderDevice()
     SAFE_DELETE( m_ToneSource );
 }
 
-//
-//  InitializeAudioDeviceAsync()
-//
-//  Activates the default audio renderer on a asynchronous callback thread.  This needs
-//  to be called from the main UI thread.
-//
+// Get the default render device's ID.
 Platform::String^ WASAPIRenderDevice::GetDeviceId()
 {
 	// Get a string representing the Default Audio Device Renderer
 	return MediaDevice::GetDefaultAudioRenderId(Windows::Media::Devices::AudioDeviceRole::Default);
 }
 
-//
-//  ActivateCompleted()
-//
-//  Callback implementation of ActivateAudioInterfaceAsync function.  This will be called on MTA thread
-//  when results of the activation are available.
-//
+// Perform device-type-specific activation logic.
 HRESULT WASAPIRenderDevice::ActivateCompletedInternal()
 {
     // Get the render client
@@ -63,22 +53,19 @@ exit:
     return hr;
 }
 
-//
-//  SetProperties()
-//
 //  Sets various properties that the user defines in the scenario
-//
 HRESULT WASAPIRenderDevice::SetProperties( DEVICEPROPS props )
 {
     m_DeviceProps = props;
     return S_OK;
 }
 
-//
-//  GetBufferFramesPerPeriod()
-//
+bool WASAPIRenderDevice::IsDeviceActive(DeviceState deviceState)
+{
+	return deviceState == DeviceState::Playing;
+}
+
 //  Get the time in seconds between passes of the audio device
-//
 UINT32 WASAPIRenderDevice::GetBufferFramesPerPeriod()
 {
     REFERENCE_TIME defaultDevicePeriod = 0;
