@@ -23,11 +23,15 @@ namespace Wazappy
 		WASAPIDevice();
 
 		virtual HRESULT InitializeAudioDeviceAsync();
+		
+		bool IsInitialized() { return m_DeviceState >= DeviceState::Initialized; }
 
 		virtual Platform::String^ GetDeviceId() = 0;
 		virtual HRESULT ConfigureDeviceInternal() = 0;
 
 		HRESULT SetVolumeOnSession(UINT32 volume);
+
+		DeviceState GetDeviceState() { return m_DeviceState; }
 
 		METHODASYNCCALLBACK(WASAPIDevice, SampleReady, OnSampleReady);
 
@@ -37,6 +41,16 @@ namespace Wazappy
 		// Subtypes override this method to perform additional logic on activation.
 		virtual HRESULT ActivateCompletedInternal() = 0;
 
+	public:
+		// Register a hook for all device state change callbacks.
+		static void RegisterDeviceStateCallbackHook(DeviceStateCallback hook);
+
+		// Register a particular callback for a particular node.
+		static void RegisterDeviceStateCallback(NodeId node, CallbackId callback);
+
+		// Unregister a particular callback for a particular node.
+		static void UnregisterDeviceStateCallback(NodeId node, CallbackId callback);
+
 	private:
 		HRESULT OnSampleReady(IMFAsyncResult* pResult);
 
@@ -45,6 +59,16 @@ namespace Wazappy
 
 		// Returns true if the device is currently active (e.g. if sample-ready work items should continue to be queued).
 		virtual bool IsDeviceActive(DeviceState deviceState) = 0;
+
+	private:
+		// The single callback for all DeviceState-changed events.
+		static DeviceStateCallback s_deviceStateCallbackHook;
+
+		// Map from nodes to DeviceStateChanged callbacks for each node.
+		static std::map<NodeId, std::map<CallbackId, bool>> s_deviceStateChangedCallbacks;
+		
+		// Mutex for operating over callbacks.
+		static std::mutex s_deviceStateChangedCallbackMutex;
 
 	protected:
 		virtual ~WASAPIDevice();

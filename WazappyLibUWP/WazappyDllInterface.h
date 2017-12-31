@@ -134,20 +134,20 @@ namespace Wazappy
 		class __declspec(dllexport) WASAPIDeviceInterop
 		{
 		public:
-			static HRESULT WASAPIDevice_SetVolumeOnSession(UINT32 volume);
+			static HRESULT WASAPIDevice_SetVolumeOnSession(WazappyNodeHandle handle, UINT32 volume);
 
 			// Begin initializing the audio device(s).
 			// TODO: clarify the lifecycle of this, the exclusivity versus other devices, etc.
-			static HRESULT WASAPIIDevice_InitializeAudioDeviceAsync();
+			static HRESULT WASAPIIDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle);
 
 			// Becomes true once the session is initialized.
-			static BOOL WASAPIIDevice_IsInitialized();
+			static BOOL WASAPIIDevice_IsInitialized(WazappyNodeHandle handle);
 
 			// Get the current device state of this device.
 			static DeviceState WASAPIDevice_GetDeviceState(WazappyNodeHandle handle);
 
 			// Register the device state callback hook, used for dispatching all callbacks.
-			static HRESULT WASAPIDevice_RegisterDeviceStateChangeCallbackHook(WazappyNodeHandle handle, DeviceStateCallback hook);
+			static HRESULT WASAPIDevice_RegisterDeviceStateChangeCallbackHook(DeviceStateCallback hook);
 
 			// Register a particular callback on this node, by its ID.
 			static HRESULT WASAPIDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, CallbackId id);
@@ -173,7 +173,6 @@ namespace Wazappy
 			static HRESULT WASAPICaptureDevice_StartCaptureAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPICaptureDevice_StopCaptureAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPICaptureDevice_FinishCaptureAsync(WazappyNodeHandle handle);
-
 		};
 	}
 }

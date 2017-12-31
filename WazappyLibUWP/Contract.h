@@ -5,6 +5,7 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <string>
 
 namespace Wazappy
@@ -14,14 +15,34 @@ namespace Wazappy
 	public:
 		static void Requires(bool value)
 		{
-			Requires(value, L"Contractual requirement");
+			Requires(value, L"(no description)");
 		}
 
-		static void Requires(bool value, std::wstring label)
+		static void Assert(bool value)
+		{
+			Assert(value, L"(no description)");
+		}
+
+		static void Requires(bool value, const std::wstring& label)
+		{
+			Check(value, L"Requires", label);
+		}
+
+		static void Assert(bool value, const std::wstring& label)
+		{
+			Check(value, L"Assert", label);
+		}
+
+	private:
+		static void Check(bool value, const std::wstring& source, const std::wstring& label)
 		{
 			if (!value)
 			{
-				std::wcerr << L"Contract.Requires failure: " << label << L"\r\n";
+				std::wstringstream wstr;
+
+				wstr << source << L" failure: " << label << L"\r\n";
+				std::wstring str(wstr.str());
+				std::wcerr << str;
 				std::wcerr.flush();
 
 				std::abort();

@@ -3,74 +3,132 @@
 // Licensed under the MIT License.
 // This file based on WindowsAudioSession sample from https://github.com/Microsoft/Windows-universal-samples
 
+#include "pch.h"
 #include "WazappyDllInterface.h"
+#include "WASAPICaptureDevice.h"
+#include "WASAPIRenderDevice.h"
+#include "WASAPISession.h"
+
+using namespace Wazappy;
 
 // Get a node handle for the default capture device.
 // Can be called before IsInitialized().
-Wazappy::WazappyNodeHandle Wazappy::WASAPISessionInterop::WASAPISession_GetDefaultCaptureDevice()
+WazappyNodeHandle WASAPISessionInterop::WASAPISession_GetDefaultCaptureDevice()
 {
+	ComPtr<WASAPICaptureDevice> captureDevice = Make<WASAPICaptureDevice>();
+	Contract::Assert(captureDevice != nullptr);
+	NodeId newDeviceId = WASAPISession::RegisterDevice(captureDevice);
+	return WazappyNodeHandle(WazappyNodeType::NodeType_CaptureDevice, newDeviceId);
 }
 
-Wazappy::WazappyNodeHandle Wazappy::WASAPISessionInterop::WASAPISession_GetDefaultRenderDevice()
+WazappyNodeHandle WASAPISessionInterop::WASAPISession_GetDefaultRenderDevice()
 {
+	ComPtr<WASAPIRenderDevice> device = Make<WASAPIRenderDevice>();
+	Contract::Assert(device != nullptr);
+	NodeId newDeviceId = WASAPISession::RegisterDevice(device);
+	return WazappyNodeHandle(WazappyNodeType::NodeType_RenderDevice, newDeviceId);
 }
 
-HRESULT Wazappy::WASAPIDeviceInterop::WASAPIDevice_SetVolumeOnSession(UINT32 volume)
+template <typename TNode>
+TNode* ResolveDevice(WazappyNodeHandle handle, WazappyNodeType expectedType)
 {
+	Contract::Requires(handle.nodeType == expectedType, L"Handle must be of expected type");
+	return ResolveDevice<TNode>(handle);
 }
 
-HRESULT Wazappy::WASAPIDeviceInterop::WASAPIIDevice_InitializeAudioDeviceAsync()
+template <typename TNode>
+TNode* ResolveDevice(WazappyNodeHandle handle)
 {
+	const ComPtr<WASAPIDevice>& device = WASAPISession::GetDevice(handle.nodeId);
+	return dynamic_cast<TNode*>(device.Get());
 }
 
-BOOL Wazappy::WASAPIDeviceInterop::WASAPIIDevice_IsInitialized()
+HRESULT WASAPIDeviceInterop::WASAPIDevice_SetVolumeOnSession(WazappyNodeHandle handle, UINT32 volume)
 {
+	WASAPIDevice* device = ResolveDevice<WASAPIDevice>(handle);
+	return device->SetVolumeOnSession(volume);
 }
 
-Wazappy::DeviceState Wazappy::WASAPIDeviceInterop::WASAPIDevice_GetDeviceState(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPIDeviceInterop::WASAPIIDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle)
 {
+	WASAPIDevice* device = ResolveDevice<WASAPIDevice>(handle);
+	return device->InitializeAudioDeviceAsync();
 }
 
-HRESULT Wazappy::WASAPIDeviceInterop::WASAPIDevice_RegisterDeviceStateChangeCallbackHook(Wazappy::WazappyNodeHandle handle, DeviceStateCallback hook)
+BOOL WASAPIDeviceInterop::WASAPIIDevice_IsInitialized(WazappyNodeHandle handle)
 {
+	WASAPIDevice* device = ResolveDevice<WASAPIDevice>(handle);
+	return device->IsInitialized();
 }
 
-HRESULT Wazappy::WASAPIDeviceInterop::WASAPIDevice_RegisterDeviceStateChangeCallback(Wazappy::WazappyNodeHandle handle, CallbackId id)
+DeviceState WASAPIDeviceInterop::WASAPIDevice_GetDeviceState(WazappyNodeHandle handle)
 {
+	WASAPIDevice* device = ResolveDevice<WASAPIDevice>(handle);
+	return device->GetDeviceState();
 }
 
-HRESULT Wazappy::WASAPIDeviceInterop::WASAPIDevice_UnregisterDeviceStateChangeCallback(Wazappy::WazappyNodeHandle handle, CallbackId id)
+HRESULT WASAPIDeviceInterop::WASAPIDevice_RegisterDeviceStateChangeCallbackHook(DeviceStateCallback hook)
 {
+	WASAPIDevice::RegisterDeviceStateCallbackHook(hook);
+	return S_OK;
 }
 
-HRESULT Wazappy::WASAPIRenderDeviceInterop::WASAPIRenderDevice_SetProperties(Wazappy::WazappyNodeHandle handle, DEVICEPROPS props)
+HRESULT WASAPIDeviceInterop::WASAPIDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, CallbackId id)
 {
+	WASAPIDevice::RegisterDeviceStateCallback(handle.nodeId, id);
+	return S_OK;
 }
 
-HRESULT Wazappy::WASAPIRenderDeviceInterop::WASAPIRenderDevice_StartPlaybackAsync(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPIDeviceInterop::WASAPIDevice_UnregisterDeviceStateChangeCallback(WazappyNodeHandle handle, CallbackId id)
 {
+	WASAPIDevice::UnregisterDeviceStateCallback(handle.nodeId, id);
+	return S_OK;
 }
 
-HRESULT Wazappy::WASAPIRenderDeviceInterop::WASAPIRenderDevice_StopPlaybackAsync(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPIRenderDeviceInterop::WASAPIRenderDevice_SetProperties(WazappyNodeHandle handle, DEVICEPROPS props)
 {
+	WASAPIRenderDevice* device = ResolveDevice<WASAPIRenderDevice>(handle, WazappyNodeType::NodeType_RenderDevice);
+	return device->SetProperties(props);
+}
+
+HRESULT WASAPIRenderDeviceInterop::WASAPIRenderDevice_StartPlaybackAsync(WazappyNodeHandle handle)
+{
+	WASAPIRenderDevice* device = ResolveDevice<WASAPIRenderDevice>(handle, WazappyNodeType::NodeType_RenderDevice);
+	return device->StartPlaybackAsync();
+}
+
+HRESULT WASAPIRenderDeviceInterop::WASAPIRenderDevice_StopPlaybackAsync(WazappyNodeHandle handle)
+{
+	WASAPIRenderDevice* device = ResolveDevice<WASAPIRenderDevice>(handle, WazappyNodeType::NodeType_RenderDevice);
+	return device->StopPlaybackAsync();
 }
 		
-HRESULT Wazappy::WASAPIRenderDeviceInterop::WASAPIRenderDevice_PausePlaybackAsync(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPIRenderDeviceInterop::WASAPIRenderDevice_PausePlaybackAsync(WazappyNodeHandle handle)
 {
+	WASAPIRenderDevice* device = ResolveDevice<WASAPIRenderDevice>(handle, WazappyNodeType::NodeType_RenderDevice);
+	return device->PausePlaybackAsync();
 }
 
-HRESULT Wazappy::WASAPICaptureDeviceInterop::WASAPICaptureDevice_SetProperties(Wazappy::WazappyNodeHandle handle, CAPTUREDEVICEPROPS props)
+HRESULT WASAPICaptureDeviceInterop::WASAPICaptureDevice_SetProperties(WazappyNodeHandle handle, CAPTUREDEVICEPROPS props)
 {
+	WASAPICaptureDevice* device = ResolveDevice<WASAPICaptureDevice>(handle, WazappyNodeType::NodeType_CaptureDevice);
+	return device->SetProperties(props);
 }
 
-HRESULT Wazappy::WASAPICaptureDeviceInterop::WASAPICaptureDevice_StartCaptureAsync(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPICaptureDeviceInterop::WASAPICaptureDevice_StartCaptureAsync(WazappyNodeHandle handle)
 {
+	WASAPICaptureDevice* device = ResolveDevice<WASAPICaptureDevice>(handle, WazappyNodeType::NodeType_CaptureDevice);
+	return device->StartCaptureAsync();
 }
 
-HRESULT Wazappy::WASAPICaptureDeviceInterop::WASAPICaptureDevice_StopCaptureAsync(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPICaptureDeviceInterop::WASAPICaptureDevice_StopCaptureAsync(WazappyNodeHandle handle)
 {
+	WASAPICaptureDevice* device = ResolveDevice<WASAPICaptureDevice>(handle, WazappyNodeType::NodeType_CaptureDevice);
+	return device->StopCaptureAsync();
 }
 
-HRESULT Wazappy::WASAPICaptureDeviceInterop::WASAPICaptureDevice_FinishCaptureAsync(Wazappy::WazappyNodeHandle handle)
+HRESULT WASAPICaptureDeviceInterop::WASAPICaptureDevice_FinishCaptureAsync(WazappyNodeHandle handle)
 {
+	WASAPICaptureDevice* device = ResolveDevice<WASAPICaptureDevice>(handle, WazappyNodeType::NodeType_CaptureDevice);
+	return device->FinishCaptureAsync();
 }

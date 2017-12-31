@@ -174,6 +174,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -195,20 +196,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Contract.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="Contract.h" />
     <ClInclude Include="DeviceState.h" />
-    <ClInclude Include="WazappyDllInterface.cpp" />
     <ClInclude Include="MFSampleGenerator.h" />
     <ClInclude Include="ToneSampleGenerator.h" />
     <ClInclude Include="WASAPICaptureDevice.h" />
     <ClInclude Include="WASAPIDevice.h" />
     <ClInclude Include="WASAPIRenderDevice.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="WASAPISession.h" />
     <ClInclude Include="WazappyDllInterface.h" />
     <ClInclude Include="WazappyNode.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFSampleGenerator.cpp" />
@@ -216,6 +216,9 @@
     <ClCompile Include="WASAPICaptureDevice.cpp" />
     <ClCompile Include="WASAPIDevice.cpp" />
     <ClCompile Include="WASAPIRenderDevice.cpp" />
+    <ClCompile Include="WASAPISession.cpp" />
+    <ClCompile Include="WazappyDllInterface.cpp" />
+    <ClCompile Include="WazappyNode.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -225,8 +228,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="WASAPISession.cpp" />
-    <ClCompile Include="WazappyNode.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -214,3 +214,35 @@ HRESULT WASAPIDevice::OnSampleReady(IMFAsyncResult* pResult)
 	return hr;
 }
 
+DeviceStateCallback WASAPIDevice::s_deviceStateCallbackHook{};
+
+std::map<NodeId, std::map<CallbackId, bool>> WASAPIDevice::s_deviceStateChangedCallbacks{};
+
+std::mutex WASAPIDevice::s_deviceStateChangedCallbackMutex{};
+
+void WASAPIDevice::RegisterDeviceStateCallbackHook(DeviceStateCallback hook)
+{
+	s_deviceStateCallbackHook = hook;
+}
+
+void WASAPIDevice::RegisterDeviceStateCallback(NodeId node, CallbackId callback)
+{
+	std::lock_guard<std::mutex> guard(s_deviceStateChangedCallbackMutex);
+	auto& iter = s_deviceStateChangedCallbacks.find(node);
+	if (iter != s_deviceStateChangedCallbacks.end())
+	{
+		auto& map = iter->second;
+		Contract::Requires(map.find(callback) == map.end(), L"Must not post same callback on same node twice");
+	}
+	s_deviceStateChangedCallbacks[node].emplace(callback, true);
+}
+
+void WASAPIDevice::UnregisterDeviceStateCallback(NodeId node, CallbackId callback)
+{
+	std::lock_guard<std::mutex> guard(s_deviceStateChangedCallbackMutex);
+	auto& iter = s_deviceStateChangedCallbacks.find(node);
+	Contract::Requires(iter != s_deviceStateChangedCallbacks.end(), L"Some callback(s) must be registered on given node");
+	auto& iter2 = iter->second.find(callback);
+	Contract::Requires(iter2 != iter->second.end(), L"Given callback must be registered on given node");
+	iter->second.erase(callback);
+}

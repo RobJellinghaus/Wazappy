@@ -18,10 +18,21 @@ namespace Wazappy
 	class WASAPISession
 	{
 	private:
-		std::map<NodeId, ComPtr<WASAPIDevice>> s_deviceMap;
+		static std::mutex s_mutex;
+
+		// Central session-scoped node-id-to-device mapping; owns all the WASAPIDevices.
+		static std::map<NodeId, ComPtr<WASAPIDevice>> s_deviceMap;
+
+		static NodeId s_nextNodeId;
 
 	public: 
+		// Register the given device.
+		static NodeId RegisterDevice(const ComPtr<WASAPIDevice>& device);
 
+		// Unregister the given device.
+		static void UnregisterDevice(NodeId nodeId);
+
+		static const ComPtr<WASAPIDevice>& GetDevice(NodeId nodeId);
 	};
 }
 
