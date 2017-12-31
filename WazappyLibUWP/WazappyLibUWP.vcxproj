@@ -198,6 +198,7 @@
     <ClInclude Include="Contract.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DeviceState.h" />
+    <ClInclude Include="WazappyDllInterface.cpp" />
     <ClInclude Include="MFSampleGenerator.h" />
     <ClInclude Include="ToneSampleGenerator.h" />
     <ClInclude Include="WASAPICapture.h" />

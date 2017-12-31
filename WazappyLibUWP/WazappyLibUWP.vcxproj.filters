@@ -31,5 +31,6 @@
     <ClInclude Include="WASAPISession.h" />
     <ClInclude Include="WazappyNode.h" />
     <ClInclude Include="WASAPIDevice.h" />
+    <ClInclude Include="WazappyDllInterface.cpp" />
   </ItemGroup>
 </Project>

@@ -114,39 +114,9 @@ HRESULT WASAPICaptureDevice::InitializeAudioDeviceAsync()
 //  Callback implementation of ActivateAudioInterfaceAsync function.  This will be called on MTA thread
 //  when results of the activation are available.
 //
-HRESULT WASAPICaptureDevice::ActivateCompleted( IActivateAudioInterfaceAsyncOperation *operation )
+HRESULT WASAPICaptureDevice::ActivateCompletedInternal()
 {
     HRESULT hr = S_OK;
-    HRESULT hrActivateResult = S_OK;
-    ComPtr<IUnknown> punkAudioInterface;
-
-    // Check for a successful activation result
-    hr = operation->GetActivateResult( &hrActivateResult, &punkAudioInterface );
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
-    hr = hrActivateResult;
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
-    // Get the pointer for the Audio Client
-    punkAudioInterface.CopyTo( &m_AudioClient );
-    if (nullptr == m_AudioClient)
-    {
-        hr = E_NOINTERFACE;
-        goto exit;
-    }
-
-    hr = m_AudioClient->GetMixFormat( &m_MixFormat );
-    if (FAILED( hr ))
-    {
-        goto exit;
-    }
-
     // convert from Float to 16-bit PCM
     switch ( m_MixFormat->wFormatTag )
     {
@@ -212,24 +182,11 @@ HRESULT WASAPICaptureDevice::ActivateCompleted( IActivateAudioInterfaceAsyncOper
     }
 
     // Initialize the AudioClient in Shared Mode with the user specified buffer
-    if (m_DeviceProps.IsLowLatency == false)
-    {
-        hr = m_AudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-            200000,
-            0,
-            m_MixFormat,
-            nullptr);
-    }
-    else
-    {
-        hr = m_AudioClient->InitializeSharedAudioStream(
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-            m_MinPeriodInFrames,
-            m_MixFormat,
-            nullptr);
-    }
-
+    hr = m_AudioClient->InitializeSharedAudioStream(
+        AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+        m_MinPeriodInFrames,
+        m_MixFormat,
+        nullptr);
 
     if (FAILED( hr ))
     {

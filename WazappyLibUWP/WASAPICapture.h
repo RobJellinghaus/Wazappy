@@ -40,7 +40,7 @@ namespace Wazappy
         STDMETHOD(ActivateCompleted)( IActivateAudioInterfaceAsyncOperation *operation );
 
     private:
-        ~WASAPICaptureDevice();
+        virtual ~WASAPICaptureDevice();
 
         HRESULT OnStartCapture( IMFAsyncResult* pResult );
         HRESULT OnStopCapture( IMFAsyncResult* pResult );

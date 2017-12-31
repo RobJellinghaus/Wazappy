@@ -21,6 +21,11 @@ namespace Wazappy
     public:
         WASAPIRenderDevice();
 
+		virtual Platform::String^ GetDeviceId();
+
+		virtual HRESULT ConfigureDeviceInternal();
+		virtual HRESULT ActivateCompletedInternal();
+
 		HRESULT SetProperties(DEVICEPROPS props);
 		
 		HRESULT StartPlaybackAsync();
@@ -32,13 +37,13 @@ namespace Wazappy
         METHODASYNCCALLBACK( WASAPIRenderDevice, PausePlayback, OnPausePlayback );
 
     private:
-        ~WASAPIRenderDevice();
+        virtual ~WASAPIRenderDevice();
 
         HRESULT OnStartPlayback( IMFAsyncResult* pResult );
         HRESULT OnStopPlayback( IMFAsyncResult* pResult );
         HRESULT OnPausePlayback( IMFAsyncResult* pResult );
 
-        HRESULT ConfigureDeviceInternal();
+        virtual HRESULT ConfigureDeviceInternal();
         HRESULT ValidateBufferValue();
 
         virtual HRESULT OnAudioSampleRequested( Platform::Boolean IsSilence = false );

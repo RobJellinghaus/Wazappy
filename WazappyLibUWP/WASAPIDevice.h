@@ -24,12 +24,20 @@ namespace Wazappy
 
 		virtual HRESULT InitializeAudioDeviceAsync();
 
+		virtual Platform::String^ GetDeviceId() = 0;
+		virtual HRESULT ConfigureDeviceInternal() = 0;
+
+		HRESULT SetVolumeOnSession(UINT32 volume);
+
+		METHODASYNCCALLBACK(WASAPIDevice, SampleReady, OnSampleReady);
+
 		// IActivateAudioInterfaceCompletionHandler
 		STDMETHOD(ActivateCompleted)(IActivateAudioInterfaceAsyncOperation *operation);
 
-	private:
-		~WASAPIDevice();
+		// Subtypes override this method to perform additional logic on activation.
+		virtual HRESULT ActivateCompletedInternal() = 0;
 
+	private:
 		HRESULT OnSampleReady(IMFAsyncResult* pResult);
 
 		// An audio sample is requested by the device.
@@ -39,6 +47,8 @@ namespace Wazappy
 		virtual bool IsDeviceActive(DeviceState deviceState) = 0;
 
 	protected:
+		virtual ~WASAPIDevice();
+
 		Platform::String^ m_DeviceIdString;
 		UINT32 m_BufferFrames;
 

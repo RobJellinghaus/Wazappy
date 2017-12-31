@@ -45,7 +45,7 @@ namespace Wazappy
 			ContentType_File
 		};
 
-		// Types of Wazappy nodes.
+		// Types of Wazappy nodes, corresponding to concrete subclasses.
 		enum WazappyNodeType
 		{
 			// Nonexistent value (to catch uninitialized nodes).
@@ -60,7 +60,6 @@ namespace Wazappy
 
 		// The ID of a WASAPI node object; avoids issues with marshaling object references.
 		typedef int NodeId;
-
 
 		// A handle to a Wazappy node. 
 		// No reference counting or even tracking is done over this interface; it works purely at the raw pointer level.
@@ -98,17 +97,10 @@ namespace Wazappy
 		// Top-level methods which affect the entire session.
 		// The session is semantically a singleton; that is, there is no WazappyNodeHandle for a session,
 		// and these methods require no context.
-		class __declspec(dllexport) WASAPISession
+		// TODO: make this actually be a thing, by figuring out how to support multiple devices, by refactoring device state into session.
+		class __declspec(dllexport) WASAPISessionInterop
 		{
 		public:
-			static HRESULT WASAPISession_SetVolumeOnSession(UINT32 volume);
-
-			// Begin initializing the audio device(s).
-			static HRESULT WASAPISession_InitializeAudioDeviceAsync();
-
-			// Becomes true once the session is initialized.
-			static BOOL WASAPISession_IsInitialized();
-
 			// Get a node handle for the default capture device.
 			// Can be called before IsInitialized().
 			static WazappyNodeHandle WASAPISession_GetDefaultCaptureDevice();
@@ -116,12 +108,6 @@ namespace Wazappy
 			// Get a node handle for the default render device.
 			// Can be called before IsInitialized().
 			static WazappyNodeHandle WASAPISession_GetDefaultRenderDevice();
-
-			// Close the session.  Will forcibly free all related objects and release all devices
-			// and handles.
-			// Can only be called after IsInitialized().
-			// IsInitialized() becomes false after this method is called.
-			static HRESULT WASAPISession_Close();
 		};
 
 		// The ID of a callback object; avoids issues with marshaling function pointers.
@@ -131,7 +117,7 @@ namespace Wazappy
 		typedef HRESULT(__stdcall *DeviceStateCallback)(CallbackId target, DeviceState deviceState);
 
 		/*
-		class __declspec(dllexport) WASAPINode
+		class __declspec(dllexport) WASAPINodeInterop
 		{
 		public:
 			// Add an incoming conection from the given upstream node.
@@ -145,14 +131,23 @@ namespace Wazappy
 		*/
 
 		// Methods specific to Devices; all handles must be Devices.
-		class __declspec(dllexport) WASAPIDevice
+		class __declspec(dllexport) WASAPIDeviceInterop
 		{
 		public:
+			static HRESULT WASAPIDevice_SetVolumeOnSession(UINT32 volume);
+
+			// Begin initializing the audio device(s).
+			// TODO: clarify the lifecycle of this, the exclusivity versus other devices, etc.
+			static HRESULT WASAPIIDevice_InitializeAudioDeviceAsync();
+
+			// Becomes true once the session is initialized.
+			static BOOL WASAPIIDevice_IsInitialized();
+
 			// Get the current device state of this device.
-			static DeviceState WASAPIRenderDevice_GetDeviceState(WazappyNodeHandle handle);
+			static DeviceState WASAPIDevice_GetDeviceState(WazappyNodeHandle handle);
 
 			// Register the device state callback hook, used for dispatching all callbacks.
-			static HRESULT WASAPIRenderDevice_RegisterDeviceStateChangeCallbackHook(WazappyNodeHandle handle, DeviceStateCallback hook);
+			static HRESULT WASAPIDevice_RegisterDeviceStateChangeCallbackHook(WazappyNodeHandle handle, DeviceStateCallback hook);
 
 			// Register a particular callback on this node, by its ID.
 			static HRESULT WASAPIDevice_RegisterDeviceStateChangeCallback(WazappyNodeHandle handle, CallbackId id);
@@ -161,7 +156,7 @@ namespace Wazappy
 		};
 
 		// Methods specific to RenderDevices; all handles must be RenderDevices.
-		class __declspec(dllexport) WASAPIRenderDevice
+		class __declspec(dllexport) WASAPIRenderDeviceInterop
 		{
 		public:
 			static HRESULT WASAPIRenderDevice_SetProperties(WazappyNodeHandle handle, DEVICEPROPS props);
@@ -171,11 +166,10 @@ namespace Wazappy
 		};
 
 		// Methods specific to CaptureDevices; all handles must be CaptureDevices.
-		class __declspec(dllexport) WASAPICaptureDevice
+		class __declspec(dllexport) WASAPICaptureDeviceInterop
 		{
 		public:
 			static HRESULT WASAPICaptureDevice_SetProperties(WazappyNodeHandle handle, CAPTUREDEVICEPROPS props);
-			static HRESULT WASAPICaptureDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPICaptureDevice_StartCaptureAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPICaptureDevice_StopCaptureAsync(WazappyNodeHandle handle);
 			static HRESULT WASAPICaptureDevice_FinishCaptureAsync(WazappyNodeHandle handle);
