@@ -15,18 +15,18 @@ using namespace Wazappy;
 // Can be called before IsInitialized().
 WazappyNodeHandle WASAPISessionInterop::WASAPISession_GetDefaultCaptureDevice()
 {
-	ComPtr<WASAPICaptureDevice> captureDevice = Make<WASAPICaptureDevice>();
-	Contract::Assert(captureDevice != nullptr);
-	NodeId newDeviceId = WASAPISession::RegisterDevice(captureDevice);
-	return WazappyNodeHandle(WazappyNodeType::NodeType_CaptureDevice, newDeviceId);
+	ComPtr<WASAPICaptureDevice> device = Make<WASAPICaptureDevice>();
+	Contract::Assert(device != nullptr);
+	WASAPISession::RegisterDevice(device);
+	return WazappyNodeHandle(WazappyNodeType::NodeType_CaptureDevice, device->GetNodeId());
 }
 
 WazappyNodeHandle WASAPISessionInterop::WASAPISession_GetDefaultRenderDevice()
 {
 	ComPtr<WASAPIRenderDevice> device = Make<WASAPIRenderDevice>();
 	Contract::Assert(device != nullptr);
-	NodeId newDeviceId = WASAPISession::RegisterDevice(device);
-	return WazappyNodeHandle(WazappyNodeType::NodeType_RenderDevice, newDeviceId);
+	WASAPISession::RegisterDevice(device);
+	return WazappyNodeHandle(WazappyNodeType::NodeType_RenderDevice, device->GetNodeId());
 }
 
 template <typename TNode>

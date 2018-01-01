@@ -28,10 +28,9 @@ WASAPICaptureDevice::WASAPICaptureDevice() :
     m_fWriting( false )
 {
     // Register MMCSS work queue
-    HRESULT hr = S_OK;
     DWORD dwTaskID = 0;
 
-    hr = MFLockSharedWorkQueue( L"Capture", 0, &dwTaskID, &m_dwQueueID );
+    HRESULT hr = MFLockSharedWorkQueue( L"Capture", 0, &dwTaskID, &m_dwQueueID );
     if (FAILED( hr ))
     {
         ThrowIfFailed( hr );

@@ -31,6 +31,7 @@ namespace Wazappy
 
 		HRESULT SetVolumeOnSession(UINT32 volume);
 
+		NodeId GetNodeId() { return m_nodeId; }
 		DeviceState GetDeviceState() { return m_DeviceState; }
 
 		METHODASYNCCALLBACK(WASAPIDevice, SampleReady, OnSampleReady);
@@ -60,6 +61,12 @@ namespace Wazappy
 		// Returns true if the device is currently active (e.g. if sample-ready work items should continue to be queued).
 		virtual bool IsDeviceActive(DeviceState deviceState) = 0;
 
+		// Update the device state, calling any callbacks.
+		// This calls the callback hook for each callback registered on this device; the callback hook is called from the caller thread.
+		// TODO: make the callback hook use work items for invoking the actual callbacks on a worker thread, to isolate the audio graph
+		// from the client.
+		virtual void SetDeviceStateAndNotifyCallbacks(DeviceState newState);
+
 	private:
 		// The single callback for all DeviceState-changed events.
 		static DeviceStateCallback s_deviceStateCallbackHook;
@@ -73,6 +80,7 @@ namespace Wazappy
 	protected:
 		virtual ~WASAPIDevice();
 
+		const NodeId m_nodeId;
 		Platform::String^ m_DeviceIdString;
 		UINT32 m_BufferFrames;
 

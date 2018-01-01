@@ -65,7 +65,7 @@ namespace WazappyApp
 		};
 
 	public:
-		static event DeviceStateChangedHandler^    StateChangedEvent;
+		static event DeviceStateChangedHandler^ StateChangedEvent;
 
 	private:
 		DeviceState m_DeviceState;

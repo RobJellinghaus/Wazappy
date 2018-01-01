@@ -26,13 +26,17 @@ namespace Wazappy
 		static NodeId s_nextNodeId;
 
 	public: 
-		// Register the given device.
-		static NodeId RegisterDevice(const ComPtr<WASAPIDevice>& device);
+		// Get next unallocated node ID.
+		static NodeId GetNextNodeId();
+
+		// Register the given device (which must already have a node ID that has not yet registered).
+		static void RegisterDevice(const ComPtr<WASAPIDevice>& device);
 
 		// Unregister the given device.
 		static void UnregisterDevice(NodeId nodeId);
 
-		static const ComPtr<WASAPIDevice>& GetDevice(NodeId nodeId);
+		// Get the device with the given ID; it must exist.
+		static WASAPIDevice* GetDevice(NodeId nodeId);
 	};
 }
 

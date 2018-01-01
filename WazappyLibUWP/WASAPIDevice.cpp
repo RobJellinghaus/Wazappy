@@ -5,11 +5,13 @@
 
 #include "pch.h"
 #include "WASAPIDevice.h"
+#include "WASAPISession.h"
 
 using namespace Windows::System::Threading;
 using namespace Wazappy;
 
 WASAPIDevice::WASAPIDevice() :
+	m_nodeId(WASAPISession::GetNextNodeId()),
 	m_BufferFrames(0),
 	m_DeviceState(DeviceState::Uninitialized),
 	m_AudioClient(nullptr),
@@ -245,4 +247,14 @@ void WASAPIDevice::UnregisterDeviceStateCallback(NodeId node, CallbackId callbac
 	auto& iter2 = iter->second.find(callback);
 	Contract::Requires(iter2 != iter->second.end(), L"Given callback must be registered on given node");
 	iter->second.erase(callback);
+}
+
+void WASAPIDevice::SetDeviceStateAndNotifyCallbacks(DeviceState newDeviceState)
+{
+	std::lock_guard<std::mutex> guard(s_deviceStateChangedCallbackMutex);
+	auto& iter = s_deviceStateChangedCallbacks.find(m_nodeId);
+	for (auto& callback : iter->second)
+	{
+		s_deviceStateCallbackHook(callback.first, newDeviceState);
+	}
 }
