@@ -69,6 +69,7 @@ namespace WazappyApp
 		ContentType m_ContentType;
 		DeviceStateChangedEvent^ m_StateChangedEvent;
 		WazappyNodeHandle m_renderer;
+		CallbackId m_deviceStateChangeCallbackId;
 		Platform::Boolean m_deviceSupportsRawMode;
 	};
 }

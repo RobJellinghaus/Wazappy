@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "Scenario2.xaml.h"
+#include "WazappyClient.h"
 #include <ppl.h>
 
 using namespace concurrency;
@@ -510,6 +511,14 @@ void Scenario2::InitializeDevice()
 
 		// Selects the Default Audio Device
 		WASAPIDeviceInterop::WASAPIDevice_InitializeAudioDeviceAsync(m_renderer);
+
+		// Register the callback hook, and then the callback
+		WASAPIDeviceInterop::WASAPIDevice_RegisterDeviceStateChangeCallbackHook(
+			WazappyClient::DeviceStateChangedEventCallback);
+		// Get a callback ID for our state change event
+		m_deviceStateChangeCallbackId = WazappyClient::RegisterCallback(m_StateChangedEvent);
+		// Register our callback on the render device
+		WASAPIDeviceInterop::WASAPIDevice_RegisterDeviceStateChangeCallback(m_renderer, m_deviceStateChangeCallbackId);
 	}
 }
 

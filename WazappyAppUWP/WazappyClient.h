@@ -12,12 +12,11 @@ namespace WazappyApp
 	// Provide services for registering CallbackId objects statically for use from Wazappy.
 	class WazappyClient
 	{
-	private:
+	public:
 		// Actual callback function which we register with the DLL.
 		// Is thread-safe (takes a global lock).
-		static void DeviceStateChangedEventCallback(Wazappy::CallbackId id, Wazappy::DeviceState deviceState);
+		static void __stdcall DeviceStateChangedEventCallback(Wazappy::CallbackId id, Wazappy::DeviceState deviceState);
 
-	public:
 		// Get a CallbackId for the given event.
 		// Is thread-safe (takes a global lock).
 		static Wazappy::CallbackId RegisterCallback(DeviceStateChangedEvent^ deviceStateChangedEvent);

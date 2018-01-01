@@ -114,7 +114,7 @@ namespace Wazappy
 		typedef int CallbackId;
 
 		// Callback which updates a deviceState.  The CallbackId is passed in when registering.
-		typedef HRESULT(__stdcall *DeviceStateCallback)(CallbackId target, DeviceState deviceState);
+		typedef void(__stdcall *DeviceStateCallback)(CallbackId target, DeviceState deviceState);
 
 		/*
 		class __declspec(dllexport) WASAPINodeInterop
