@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "Scenario2.xaml.h"
 #include <ppl.h>
+
 using namespace concurrency;
 
 using namespace Wazappy;
@@ -440,10 +441,10 @@ void Scenario2::OnPickFileAsync()
 //
 void Scenario2::OnSetVolume(UINT32 volume)
 {
-	if (WASAPISession::WASAPISession_IsInitialized())
+	if (m_renderer.IsValid() && WASAPIDeviceInterop::WASAPIDevice_IsInitialized(m_renderer))
 	{
 		// Updates the Session volume on the AudioClient
-		WASAPISession::WASAPISession_SetVolumeOnSession(volume);
+		WASAPIDeviceInterop::WASAPIDevice_SetVolumeOnSession(m_renderer, volume);
 	}
 }
 
@@ -459,7 +460,7 @@ void Scenario2::InitializeDevice()
 	if (!m_renderer.IsValid())
 	{
 		// Create a new WASAPI instance
-		m_renderer = WASAPISession::WASAPISession_GetDefaultRenderDevice();
+		m_renderer = WASAPISessionInterop::WASAPISession_GetDefaultRenderDevice();
 
 		if (!m_renderer.IsValid())
 		{
@@ -505,10 +506,10 @@ void Scenario2::InitializeDevice()
 		props.IsRawSupported = m_deviceSupportsRawMode;
 		props.hnsBufferDuration = static_cast<REFERENCE_TIME>(BufferSize);
 
-		WASAPIRenderDevice::WASAPIRenderDevice_SetProperties(m_renderer, props);
+		WASAPIRenderDeviceInterop::WASAPIRenderDevice_SetProperties(m_renderer, props);
 
 		// Selects the Default Audio Device
-		WASAPISession::WASAPISession_InitializeAudioDeviceAsync();
+		WASAPIDeviceInterop::WASAPIDevice_InitializeAudioDeviceAsync(m_renderer);
 	}
 }
 
@@ -525,7 +526,7 @@ void Scenario2::StartDevice()
 	else
 	{
 		// Starts a work item to begin playback, likely in the paused state
-		WASAPIRenderDevice::WASAPIRenderDevice_StartPlaybackAsync(m_renderer);
+		WASAPIRenderDeviceInterop::WASAPIRenderDevice_StartPlaybackAsync(m_renderer);
 	}
 }
 
@@ -537,7 +538,7 @@ void Scenario2::StopDevice()
 	if (m_renderer.IsValid())
 	{
 		// Set the event to stop playback
-		WASAPIRenderDevice::WASAPIRenderDevice_StopPlaybackAsync(m_renderer);
+		WASAPIRenderDeviceInterop::WASAPIRenderDevice_StopPlaybackAsync(m_renderer);
 	}
 }
 
@@ -553,7 +554,7 @@ void Scenario2::PauseDevice()
 		if (deviceState == DeviceState::Playing)
 		{
 			// Starts a work item to pause playback
-			WASAPIRenderDevice::WASAPIRenderDevice_PausePlaybackAsync(m_renderer);
+			WASAPIRenderDeviceInterop::WASAPIRenderDevice_PausePlaybackAsync(m_renderer);
 		}
 	}
 }
@@ -570,12 +571,12 @@ void Scenario2::PlayPauseToggleDevice()
 		if (deviceState == DeviceState::Playing)
 		{
 			// Starts a work item to pause playback
-			WASAPIRenderDevice::WASAPIRenderDevice_PausePlaybackAsync(m_renderer);
+			WASAPIRenderDeviceInterop::WASAPIRenderDevice_PausePlaybackAsync(m_renderer);
 		}
 		else if (deviceState == DeviceState::Paused)
 		{
 			// Starts a work item to start playback
-			WASAPIRenderDevice::WASAPIRenderDevice_StartPlaybackAsync(m_renderer);
+			WASAPIRenderDeviceInterop::WASAPIRenderDevice_StartPlaybackAsync(m_renderer);
 		}
 	}
 	else

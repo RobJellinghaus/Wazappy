@@ -138,10 +138,10 @@ namespace Wazappy
 
 			// Begin initializing the audio device(s).
 			// TODO: clarify the lifecycle of this, the exclusivity versus other devices, etc.
-			static HRESULT WASAPIIDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle);
+			static HRESULT WASAPIDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle);
 
 			// Becomes true once the session is initialized.
-			static BOOL WASAPIIDevice_IsInitialized(WazappyNodeHandle handle);
+			static BOOL WASAPIDevice_IsInitialized(WazappyNodeHandle handle);
 
 			// Get the current device state of this device.
 			static DeviceState WASAPIDevice_GetDeviceState(WazappyNodeHandle handle);

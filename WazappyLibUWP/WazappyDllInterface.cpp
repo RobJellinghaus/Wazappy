@@ -49,13 +49,13 @@ HRESULT WASAPIDeviceInterop::WASAPIDevice_SetVolumeOnSession(WazappyNodeHandle h
 	return device->SetVolumeOnSession(volume);
 }
 
-HRESULT WASAPIDeviceInterop::WASAPIIDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle)
+HRESULT WASAPIDeviceInterop::WASAPIDevice_InitializeAudioDeviceAsync(WazappyNodeHandle handle)
 {
 	WASAPIDevice* device = ResolveDevice<WASAPIDevice>(handle);
 	return device->InitializeAudioDeviceAsync();
 }
 
-BOOL WASAPIDeviceInterop::WASAPIIDevice_IsInitialized(WazappyNodeHandle handle)
+BOOL WASAPIDeviceInterop::WASAPIDevice_IsInitialized(WazappyNodeHandle handle)
 {
 	WASAPIDevice* device = ResolveDevice<WASAPIDevice>(handle);
 	return device->IsInitialized();
