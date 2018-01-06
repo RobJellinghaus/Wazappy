@@ -155,7 +155,7 @@ HRESULT WASAPICaptureDevice::ActivateCompletedInternal()
 exit:
     if (FAILED( hr ))
     {
-        m_DeviceState = DeviceState::InError;
+        SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
         SAFE_RELEASE( m_AudioCaptureClient );
     }
 
@@ -240,11 +240,11 @@ HRESULT WASAPICaptureDevice::CreateWAVFile()
     {
         try
         {
-            m_DeviceState = DeviceState::Initialized;
+            SetDeviceStateAndNotifyCallbacks(DeviceState::Initialized, true);
         }
         catch (Platform::Exception ^e)
         {
-            m_DeviceState = DeviceState::InError;
+            SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
         }
     });
 
@@ -285,7 +285,7 @@ HRESULT WASAPICaptureDevice::FixWAVHeader()
         .then(
             [this]( bool f )
         {
-            m_DeviceState = DeviceState::Stopped;
+            SetDeviceStateAndNotifyCallbacks(DeviceState::Stopped, true);
         });
     });
 
@@ -336,9 +336,9 @@ HRESULT WASAPICaptureDevice::StartCaptureAsync()
     HRESULT hr = S_OK;
 
     // We should be in the initialzied state if this is the first time through getting ready to capture.
-    if (m_DeviceState == DeviceState::Initialized)
+    if (GetDeviceState() == DeviceState::Initialized)
     {
-        m_DeviceState = DeviceState::Starting;
+        SetDeviceStateAndNotifyCallbacks(DeviceState::Starting, true);
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStartCapture, nullptr );
     }
 
@@ -359,12 +359,12 @@ HRESULT WASAPICaptureDevice::OnStartCapture( IMFAsyncResult* ignore )
     hr = m_AudioClient->Start();
     if (SUCCEEDED( hr ))
     {
-        m_DeviceState = DeviceState::Capturing;
-        MFPutWaitingWorkItem( m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey );
+        SetDeviceStateAndNotifyCallbacks(DeviceState::Capturing, true);
+        CreateWorkItemWaitingForSampleReadyEvent();
     }
     else
     {
-        m_DeviceState = DeviceState::InError;
+        SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
     }
 
     return S_OK;
@@ -377,13 +377,13 @@ HRESULT WASAPICaptureDevice::OnStartCapture( IMFAsyncResult* ignore )
 //
 HRESULT WASAPICaptureDevice::StopCaptureAsync()
 {
-    if ( (m_DeviceState != DeviceState::Capturing) &&
-         (m_DeviceState != DeviceState::InError) )
+    if ( (GetDeviceState() != DeviceState::Capturing) &&
+         (GetDeviceState() != DeviceState::InError) )
     {
         return E_NOT_VALID_STATE;
     }
 
-    m_DeviceState = DeviceState::Stopping;
+    SetDeviceStateAndNotifyCallbacks(DeviceState::Stopping, true);
 
     return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStopCapture, nullptr );
 }
@@ -395,13 +395,7 @@ HRESULT WASAPICaptureDevice::StopCaptureAsync()
 //
 HRESULT WASAPICaptureDevice::OnStopCapture( IMFAsyncResult* pResult )
 {
-    // Stop capture by cancelling Work Item
-    // Cancel the queued work item (if any)
-    if (0 != m_SampleReadyKey)
-    {
-        MFCancelWorkItem( m_SampleReadyKey );
-        m_SampleReadyKey = 0;
-    }
+	CancelWorkItemWaitingForSampleReadyEvent();
 
     m_AudioClient->Stop();
     SAFE_RELEASE( m_SampleReadyAsyncResult );
@@ -411,7 +405,7 @@ HRESULT WASAPICaptureDevice::OnStopCapture( IMFAsyncResult* pResult )
     // let the async operation completion handle the call.
     if (!m_fWriting)
     {
-        m_DeviceState = DeviceState::Flushing;
+        SetDeviceStateAndNotifyCallbacks(DeviceState::Flushing, true);
 
         concurrency::task<unsigned int>( m_WAVDataWriter->StoreAsync()).then(
             [this]( unsigned int BytesWritten )
@@ -431,7 +425,7 @@ HRESULT WASAPICaptureDevice::OnStopCapture( IMFAsyncResult* pResult )
 HRESULT WASAPICaptureDevice::FinishCaptureAsync()
 {
     // We should be flushing when this is called
-    if (m_DeviceState == DeviceState::Flushing)
+    if (GetDeviceState() == DeviceState::Flushing)
     {
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xFinishCapture, nullptr ); 
     }
@@ -467,12 +461,13 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
     UINT64 u64QPCPosition = 0;
     DWORD cbBytesToCapture = 0;
 
-    EnterCriticalSection( &m_CritSec );
+	// TODO: why??? When would this be called from multiple threads?
+	// EnterCriticalSection( &m_CritSec );
 
     // If this flag is set, we have already queued up the async call to finialize the WAV header
     // So we don't want to grab or write any more data that would possibly give us an invalid size
-    if ( (m_DeviceState == DeviceState::Stopping) ||
-         (m_DeviceState == DeviceState::Flushing) )
+    if ( (GetDeviceState() == DeviceState::Stopping) ||
+         (GetDeviceState() == DeviceState::Flushing) )
     {
         goto exit;
     }
@@ -524,8 +519,8 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
         if (dwCaptureFlags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
         {
             // Pass down a discontinuity flag in case the app is interested and reset back to capturing
-            m_DeviceState = DeviceState::Discontinuity;
-            m_DeviceState = DeviceState::Capturing;
+            SetDeviceStateAndNotifyCallbacks(DeviceState::Discontinuity, true);
+            SetDeviceStateAndNotifyCallbacks(DeviceState::Capturing, false);
         }
 
         // Zero out sample if silence
@@ -569,9 +564,9 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
 
                 // We need to check for StopCapture while we are flusing the file.  If it has come through, then we
                 // can go ahead and call FinisheCaptureAsync() to write the WAV header
-                if (m_DeviceState == DeviceState::Stopping)
+                if (GetDeviceState() == DeviceState::Stopping)
                 {
-                    m_DeviceState = DeviceState::Flushing;
+                    SetDeviceStateAndNotifyCallbacks(DeviceState::Flushing, true);
                     FinishCaptureAsync();
                 }
             });
@@ -579,7 +574,8 @@ HRESULT WASAPICaptureDevice::OnAudioSampleRequested( Platform::Boolean IsSilence
     }
 
 exit:
-    LeaveCriticalSection( &m_CritSec );
+	// TODO: why??? When would this be called from multiple threads?
+	// LeaveCriticalSection( &m_CritSec );
 
     return hr;
 }

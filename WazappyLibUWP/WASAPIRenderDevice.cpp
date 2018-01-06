@@ -47,7 +47,7 @@ HRESULT WASAPIRenderDevice::ActivateCompletedInternal()
     }
 
     // Everything succeeded
-    m_DeviceState = DeviceState::Initialized;
+    SetDeviceStateAndNotifyCallbacks(DeviceState::Initialized, true);
 
 exit:
     return hr;
@@ -105,7 +105,7 @@ UINT32 WASAPIRenderDevice::GetBufferFramesPerPeriod()
 //
 HRESULT WASAPIRenderDevice::ConfigureDeviceInternal()
 {
-    if (m_DeviceState != DeviceState::Activated)
+    if (GetDeviceState() != DeviceState::Activated)
     {
         return E_NOT_VALID_STATE;
     }
@@ -237,21 +237,21 @@ HRESULT WASAPIRenderDevice::StartPlaybackAsync()
 
     // We should be stopped if the user stopped playback, or we should be
     // initialzied if this is the first time through getting ready to playback.
-    if ( (m_DeviceState == DeviceState::Stopped) ||
-         (m_DeviceState == DeviceState::Initialized) )
+    if ( (GetDeviceState() == DeviceState::Stopped) ||
+         (GetDeviceState() == DeviceState::Initialized) )
     {
         // Setup either ToneGeneration or File Playback
         hr = ConfigureSource();
         if (FAILED( hr ))
         {
-            m_DeviceState = DeviceState::InError;
+            SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
             return hr;
         }
 
-        m_DeviceState = DeviceState::Starting;
+		SetDeviceStateAndNotifyCallbacks(DeviceState::Starting, true);
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStartPlayback, nullptr );
     }
-    else if (m_DeviceState == DeviceState::Paused)
+    else if (GetDeviceState() == DeviceState::Paused)
     {
         return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStartPlayback, nullptr );
     }
@@ -290,14 +290,14 @@ HRESULT WASAPIRenderDevice::OnStartPlayback( IMFAsyncResult* pResult )
     hr = m_AudioClient->Start();
     if (SUCCEEDED( hr ))
     {
-        m_DeviceState = DeviceState::Playing;
-        hr = MFPutWaitingWorkItem( m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey );
+		SetDeviceStateAndNotifyCallbacks(DeviceState::Playing, true);
+		hr = CreateWorkItemWaitingForSampleReadyEvent();
     }
 
 exit:
     if (FAILED( hr ))
     {
-        m_DeviceState = DeviceState::InError;
+        SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
     }
 
     return S_OK;
@@ -310,14 +310,14 @@ exit:
 //
 HRESULT WASAPIRenderDevice::StopPlaybackAsync()
 {
-    if ( (m_DeviceState != DeviceState::Playing) &&
-         (m_DeviceState != DeviceState::Paused) &&
-         (m_DeviceState != DeviceState::InError) )
+    if ( (GetDeviceState() != DeviceState::Playing) &&
+         (GetDeviceState() != DeviceState::Paused) &&
+         (GetDeviceState() != DeviceState::InError) )
     {
         return E_NOT_VALID_STATE;
     }
 
-    m_DeviceState = DeviceState::Stopping;
+    SetDeviceStateAndNotifyCallbacks(DeviceState::Stopping, true);
 
     return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xStopPlayback, nullptr );
 }
@@ -329,13 +329,6 @@ HRESULT WASAPIRenderDevice::StopPlaybackAsync()
 //
 HRESULT WASAPIRenderDevice::OnStopPlayback( IMFAsyncResult* pResult )
 {
-    // Stop playback by cancelling Work Item
-    // Cancel the queued work item (if any)
-    if (0 != m_SampleReadyKey)
-    {
-        MFCancelWorkItem( m_SampleReadyKey );
-        m_SampleReadyKey = 0;
-    }
 
     // Flush anything left in buffer with silence
     OnAudioSampleRequested( true );
@@ -355,7 +348,7 @@ HRESULT WASAPIRenderDevice::OnStopPlayback( IMFAsyncResult* pResult )
         m_MFSource->Shutdown();
     }
 
-    m_DeviceState = DeviceState::Stopped;
+    SetDeviceStateAndNotifyCallbacks(DeviceState::Stopped, true);
     return S_OK;
 }
 
@@ -366,14 +359,15 @@ HRESULT WASAPIRenderDevice::OnStopPlayback( IMFAsyncResult* pResult )
 //
 HRESULT WASAPIRenderDevice::PausePlaybackAsync()
 {
-    if ( (m_DeviceState !=  DeviceState::Playing) &&
-         (m_DeviceState != DeviceState::InError) )
+    if ( (GetDeviceState() !=  DeviceState::Playing) &&
+         (GetDeviceState() != DeviceState::InError) )
     {
         return E_NOT_VALID_STATE;
     }
 
     // Change state to stop automatic queueing of samples
-    m_DeviceState = DeviceState::Pausing;
+	// TODO: note "false" argument (no callbacks) is from original sample
+	SetDeviceStateAndNotifyCallbacks(DeviceState::Pausing, false);
     return MFPutWorkItem2( MFASYNC_CALLBACK_QUEUE_MULTITHREADED, 0, &m_xPausePlayback, nullptr );
 
 }
@@ -386,7 +380,7 @@ HRESULT WASAPIRenderDevice::PausePlaybackAsync()
 HRESULT WASAPIRenderDevice::OnPausePlayback( IMFAsyncResult* pResult )
 {
     m_AudioClient->Stop();
-    m_DeviceState = DeviceState::Paused;
+    SetDeviceStateAndNotifyCallbacks(DeviceState::Paused, true);
     return S_OK;
 }
 
@@ -401,7 +395,8 @@ HRESULT WASAPIRenderDevice::OnAudioSampleRequested( Platform::Boolean IsSilence 
     UINT32 PaddingFrames = 0;
     UINT32 FramesAvailable = 0;
 
-    EnterCriticalSection( &m_CritSec );
+	// TODO: why??? When would this be called from multiple threads?
+    // EnterCriticalSection( &m_CritSec );
 
     // Get padding in existing buffer
     hr = m_AudioClient->GetCurrentPadding( &PaddingFrames );
@@ -445,7 +440,7 @@ HRESULT WASAPIRenderDevice::OnAudioSampleRequested( Platform::Boolean IsSilence 
         // Even if we cancel a work item, this may still fire due to the async
         // nature of things.  There should be a queued work item already to handle
         // the process of stopping or stopped
-        if (m_DeviceState == DeviceState::Playing)
+        if (GetDeviceState() == DeviceState::Playing)
         {
             // Fill the buffer with a playback sample
             if (m_DeviceProps.IsTonePlayback)
@@ -460,11 +455,13 @@ HRESULT WASAPIRenderDevice::OnAudioSampleRequested( Platform::Boolean IsSilence 
     }
 
 exit:
-    LeaveCriticalSection( &m_CritSec );
+	// TODO: why??? When would this be called from multiple threads?
+    // LeaveCriticalSection( &m_CritSec );
 
     if (AUDCLNT_E_RESOURCES_INVALIDATED == hr)
     {
-        m_DeviceState = DeviceState::Uninitialized;
+		// TODO: "false" here (no callbacks) is from original sample logic
+        SetDeviceStateAndNotifyCallbacks(DeviceState::Uninitialized, false);
         SAFE_RELEASE( m_AudioClient );
         SAFE_RELEASE( m_AudioRenderClient );
         SAFE_RELEASE( m_SampleReadyAsyncResult );

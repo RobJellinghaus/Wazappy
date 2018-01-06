@@ -63,7 +63,7 @@ HRESULT WASAPIDevice::InitializeAudioDeviceAsync()
 	hr = ActivateAudioInterfaceAsync(m_DeviceIdString->Data(), __uuidof(IAudioClient3), nullptr, this, &asyncOp);
 	if (FAILED(hr))
 	{
-		m_DeviceState = DeviceState::InError;
+		SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
 	}
 
 	SAFE_RELEASE(asyncOp);
@@ -83,7 +83,7 @@ HRESULT WASAPIDevice::ActivateCompleted(IActivateAudioInterfaceAsyncOperation *o
 	HRESULT hrActivateResult = S_OK;
 	IUnknown *punkAudioInterface = nullptr;
 
-	if (m_DeviceState != DeviceState::Uninitialized)
+	if (GetDeviceState() != DeviceState::Uninitialized)
 	{
 		hr = E_NOT_VALID_STATE;
 		goto exit;
@@ -93,7 +93,8 @@ HRESULT WASAPIDevice::ActivateCompleted(IActivateAudioInterfaceAsyncOperation *o
 	hr = operation->GetActivateResult(&hrActivateResult, &punkAudioInterface);
 	if (SUCCEEDED(hr) && SUCCEEDED(hrActivateResult))
 	{
-		m_DeviceState = DeviceState::Activated;
+		// TODO: Note "false" here -- this is from original Windows sample logic... not sure still well motivated.
+		SetDeviceStateAndNotifyCallbacks(DeviceState::Activated, false);
 
 		// Get the pointer for the Audio Client
 		punkAudioInterface->QueryInterface(IID_PPV_ARGS(&m_AudioClient));
@@ -151,7 +152,7 @@ exit:
 
 	if (FAILED(hr))
 	{
-		m_DeviceState = DeviceState::InError;
+		SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
 		SAFE_RELEASE(m_AudioClient);
 		SAFE_RELEASE(m_SampleReadyAsyncResult);
 	}
@@ -189,6 +190,23 @@ exit:
 	SAFE_RELEASE(SessionAudioVolume);
 	return hr;
 }
+
+HRESULT WASAPIDevice::CreateWorkItemWaitingForSampleReadyEvent()
+{
+	return MFPutWaitingWorkItem(m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey);
+}
+
+HRESULT WASAPIDevice::CancelWorkItemWaitingForSampleReadyEvent()
+{
+	// Stop playback by cancelling Work Item
+	// Cancel the queued work item (if any)
+	if (0 != m_SampleReadyKey)
+	{
+		MFCancelWorkItem(m_SampleReadyKey);
+		m_SampleReadyKey = 0;
+	}
+}
+
 //
 //  OnSampleReady()
 //
@@ -203,14 +221,14 @@ HRESULT WASAPIDevice::OnSampleReady(IMFAsyncResult* pResult)
 	if (SUCCEEDED(hr))
 	{
 		// Re-queue work item for next sample
-		if (IsDeviceActive(m_DeviceState))
+		if (IsDeviceActive(GetDeviceState()))
 		{
 			hr = MFPutWaitingWorkItem(m_SampleReadyEvent, 0, m_SampleReadyAsyncResult, &m_SampleReadyKey);
 		}
 	}
 	else
 	{
-		m_DeviceState = DeviceState::InError;
+		SetDeviceStateAndNotifyCallbacks(DeviceState::InError, true);
 	}
 
 	return hr;
@@ -249,12 +267,15 @@ void WASAPIDevice::UnregisterDeviceStateCallback(NodeId node, CallbackId callbac
 	iter->second.erase(callback);
 }
 
-void WASAPIDevice::SetDeviceStateAndNotifyCallbacks(DeviceState newDeviceState)
+void WASAPIDevice::SetDeviceStateAndNotifyCallbacks(DeviceState newDeviceState, bool fireEvent)
 {
 	std::lock_guard<std::mutex> guard(s_deviceStateChangedCallbackMutex);
-	auto& iter = s_deviceStateChangedCallbacks.find(m_nodeId);
-	for (auto& callback : iter->second)
+	if (fireEvent)
 	{
-		s_deviceStateCallbackHook(callback.first, newDeviceState);
+		auto& iter = s_deviceStateChangedCallbacks.find(m_nodeId);
+		for (auto& callback : iter->second)
+		{
+			s_deviceStateCallbackHook(callback.first, newDeviceState);
+		}
 	}
 }

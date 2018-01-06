@@ -61,11 +61,18 @@ namespace Wazappy
 		// Returns true if the device is currently active (e.g. if sample-ready work items should continue to be queued).
 		virtual bool IsDeviceActive(DeviceState deviceState) = 0;
 
+	protected:
 		// Update the device state, calling any callbacks.
 		// This calls the callback hook for each callback registered on this device; the callback hook is called from the caller thread.
 		// TODO: make the callback hook use work items for invoking the actual callbacks on a worker thread, to isolate the audio graph
 		// from the client.
-		virtual void SetDeviceStateAndNotifyCallbacks(DeviceState newState);
+		void SetDeviceStateAndNotifyCallbacks(DeviceState newState, bool fireEvent);
+
+		// Create a work item waiting for the sample ready event.
+		HRESULT CreateWorkItemWaitingForSampleReadyEvent();
+
+		// Cancel the work item (if any) which was waiting for the sample ready event.
+		HRESULT CancelWorkItemWaitingForSampleReadyEvent();
 
 	private:
 		// The single callback for all DeviceState-changed events.
@@ -80,9 +87,20 @@ namespace Wazappy
 	protected:
 		virtual ~WASAPIDevice();
 
+		IAudioClient3 *m_AudioClient;
+
+		UINT32 m_BufferFrames;
+
+		WAVEFORMATEX *m_MixFormat;
+
+		UINT32 m_DefaultPeriodInFrames;
+		UINT32 m_FundamentalPeriodInFrames;
+		UINT32 m_MaxPeriodInFrames;
+		UINT32 m_MinPeriodInFrames;
+
+	private:
 		const NodeId m_nodeId;
 		Platform::String^ m_DeviceIdString;
-		UINT32 m_BufferFrames;
 
 		HANDLE m_SampleReadyEvent;
 		MFWORKITEM_KEY m_SampleReadyKey;
@@ -91,14 +109,6 @@ namespace Wazappy
 		CRITICAL_SECTION m_CritSec;
 
 		DeviceState m_DeviceState;
-
-		WAVEFORMATEX *m_MixFormat;
-
-		IAudioClient3 *m_AudioClient;
-		UINT32 m_DefaultPeriodInFrames;
-		UINT32 m_FundamentalPeriodInFrames;
-		UINT32 m_MaxPeriodInFrames;
-		UINT32 m_MinPeriodInFrames;
 	};
 }
 
